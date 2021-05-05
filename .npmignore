@@ -1,0 +1,6 @@
+coverage/
+test/
+demo/
+.*
+*.config.*
+web-test-runner.config.mjs

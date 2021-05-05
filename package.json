@@ -1,0 +1,111 @@
+{
+  "name": "@api-client/api-documentation",
+  "version": "0.1.0",
+  "description": "AMF graph based components to render and edit API project documentation.",
+  "license": "cc-by-4.0",
+  "main": "index.js",
+  "module": "index.js",
+  "keywords": [
+    "web-components",
+    "amf",
+    "api",
+    "documentation"
+  ],
+  "author": "Pawel Psztyc",
+  "contributors": [
+    "Your name can be here!"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/api-client/api-documentation.git"
+  },
+  "bugs": {
+    "url": "https://github.com/api-client/api-documentation/issues",
+    "email": "pawel.psztyc@gmail.com"
+  },
+  "dependencies": {
+    "@advanced-rest-client/arc-icons": "^3.3.3",
+    "@advanced-rest-client/arc-marked": "^1.1.1",
+    "@advanced-rest-client/events-target-mixin": "^3.2.3",
+    "@advanced-rest-client/markdown-styles": "^3.1.5",
+    "@anypoint-web-components/anypoint-button": "^1.2.0",
+    "@anypoint-web-components/anypoint-collapse": "^0.1.1",
+    "@anypoint-web-components/anypoint-radio-button": "^0.1.7",
+    "@anypoint-web-components/anypoint-tabs": "^0.1.16",
+    "@api-client/amf-store": "^0.2.2",
+    "@api-client/graph-project": "^0.1.1",
+    "@api-components/amf-helper-mixin": "^4.3.9",
+    "@api-components/http-method-label": "^3.1.4",
+    "lit-element": "^2.5.0",
+    "lit-html": "^1.4.0"
+  },
+  "devDependencies": {
+    "@advanced-rest-client/arc-demo-helper": "^2.2.6",
+    "@anypoint-web-components/anypoint-checkbox": "^1.1.4",
+    "@api-components/api-model-generator": "^0.2.10",
+    "@commitlint/cli": "^12.1.1",
+    "@commitlint/config-conventional": "^12.1.1",
+    "@open-wc/eslint-config": "^4.2.0",
+    "@open-wc/testing": "^2.5.33",
+    "@web/dev-server": "^0.1.17",
+    "@web/test-runner": "^0.13.3",
+    "@web/test-runner-playwright": "^0.8.4",
+    "eslint": "^7.25.0",
+    "eslint-config-prettier": "^8.3.0",
+    "husky": "^6.0.0",
+    "lint-staged": "^10.5.4",
+    "sinon": "^10.0.0",
+    "typescript": "^4.2.2",
+    "typescript-lit-html-plugin": "^0.9.0"
+  },
+  "scripts": {
+    "start": "web-dev-server --app-index demo/index.html --node-resolve --open --watch --root-dir .",
+    "lint:eslint": "eslint --ext .js,.html . --ignore-path .gitignore",
+    "format:eslint": "eslint --ext .js,.html . --fix --ignore-path .gitignore",
+    "lint:types": "tsc",
+    "lint": "npm run lint:eslint",
+    "format": "npm run format:eslint",
+    "test": "web-test-runner test/**/*.test.js --coverage --node-resolve --playwright --browsers chromium webkit",
+    "test:watch": "web-test-runner test/**/*.test.js --node-resolve --watch --playwright --browsers chromium",
+    "gen:wc": "wca analyze \"*.js\" --outFile custom-elements.json",
+    "prepare:apis": "node demo/model.js",
+    "prepare": "npm run prepare:apis"
+  },
+  "eslintConfig": {
+    "extends": [
+      "@open-wc/eslint-config",
+      "eslint-config-prettier"
+    ],
+    "overrides": [
+      {
+        "files": [
+          "demo/**/*.js",
+          "test/**/*.js",
+          "test/*.js",
+          "**/demo/**/*.html"
+        ],
+        "rules": {
+          "no-console": "off",
+          "no-unused-expressions": "off",
+          "no-plusplus": "off",
+          "no-continue": "off",
+          "no-param-reassign": "off",
+          "class-methods-use-this": "off",
+          "import/no-extraneous-dependencies": "off",
+          "prefer-destructuring": "off",
+          "no-template-curly-in-string": "off"
+        }
+      }
+    ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "lint-staged"
+    }
+  },
+  "lint-staged": {
+    "*.js": [
+      "eslint --fix"
+    ]
+  }
+}
