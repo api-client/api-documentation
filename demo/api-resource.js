@@ -20,7 +20,7 @@ class ComponentPage extends DemoPage {
     super();
     this.initObservableProperties([
       'loaded', 'initialized',
-      'selectedId', 'selectedType',
+      'selectedId', 'selectedType', 'selectedOperation',
       'apiId',
     ]);
     this.loaded = false;
@@ -28,6 +28,7 @@ class ComponentPage extends DemoPage {
     this.renderViewControls = true;
     this.selectedId = undefined;
     this.selectedType = undefined;
+    this.selectedOperation = undefined;
     this.apiId = undefined;
     this.store = new AmfStoreService(window, {
       amfLocation: '/node_modules/@api-client/amf-store/amf-bundle.js',
@@ -103,15 +104,22 @@ class ComponentPage extends DemoPage {
    * @param {APIGraphNavigationEvent} e 
    */
   navigationHandler(e) {
-    const { graphId, graphType, options } = e;
+    const { graphId, graphType, options, } = e;
     if (graphType === 'endpoint') {
       this.selectedId = graphId;
       this.selectedType = graphType;
       this.selectedOptions = options;
+      this.selectedOperation = undefined;
+    } else if (graphType === 'operation') {
+      this.selectedId = options.parent;
+      this.selectedType = 'endpoint';
+      this.selectedOptions = options;
+      this.selectedOperation = graphId;
     } else {
       this.selectedId = undefined;
       this.selectedType = undefined;
       this.selectedOptions = undefined;
+      this.selectedOperation = undefined;
     }
   }
 
@@ -167,7 +175,7 @@ class ComponentPage extends DemoPage {
   }
 
   _componentTemplate() {
-    const { demoStates, darkThemeActive, selectedId } = this;
+    const { demoStates, darkThemeActive, selectedId, selectedOperation } = this;
     if (!selectedId) {
       return html`<p>Select API operation in the navigation</p>`;
     }
@@ -179,6 +187,7 @@ class ComponentPage extends DemoPage {
     >
       <amf-resource-document
         .resourceId="${selectedId}"
+        .operationId="${selectedOperation}"
         slot="content"
       >
       </amf-resource-document>

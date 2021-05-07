@@ -33,11 +33,11 @@
     "@anypoint-web-components/anypoint-radio-button": "^0.1.7",
     "@anypoint-web-components/anypoint-tabs": "^0.1.16",
     "@api-client/amf-store": "^0.2.2",
-    "@api-client/graph-project": "^0.1.1",
+    "@api-client/graph-project": "^0.1.2",
     "@api-components/amf-helper-mixin": "^4.3.9",
     "@api-components/http-method-label": "^3.1.4",
-    "lit-element": "^2.5.0",
-    "lit-html": "^1.4.0"
+    "lit-element": "^2.5.1",
+    "lit-html": "^1.4.1"
   },
   "devDependencies": {
     "@advanced-rest-client/arc-demo-helper": "^2.2.6",
@@ -48,7 +48,7 @@
     "@open-wc/eslint-config": "^4.2.0",
     "@open-wc/testing": "^2.5.33",
     "@web/dev-server": "^0.1.17",
-    "@web/test-runner": "^0.13.3",
+    "@web/test-runner": "^0.13.4",
     "@web/test-runner-playwright": "^0.8.4",
     "eslint": "^7.25.0",
     "eslint-config-prettier": "^8.3.0",

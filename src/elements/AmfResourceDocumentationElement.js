@@ -16,7 +16,8 @@ import { AmfDocumentationBase, paramsSectionTemplate, schemaItemTemplate } from 
 /** @typedef {import('@api-client/amf-store').ApiStoreStateUpdateEvent} ApiStoreStateUpdateEvent */
 /** @typedef {import('@api-client/amf-store').ApiStoreStateDeleteEvent} ApiStoreStateDeleteEvent */
 
-export const resourceIdValue = Symbol('resourceId');
+export const resourceIdValue = Symbol('resourceIdValue');
+export const operationIdValue = Symbol('operationIdValue');
 export const queryingValue = Symbol('queryingValue');
 export const queryEndpoint = Symbol('queryEndpoint');
 export const queryServers = Symbol('queryServers');
@@ -36,6 +37,7 @@ export const serverUpdatedHandler = Symbol('serverUpdatedHandler');
 export const serverDeletedHandler = Symbol('serverDeletedHandler');
 export const operationCreatedHandler = Symbol('operationCreatedHandler');
 export const operationDeletedHandler = Symbol('operationDeletedHandler');
+export const operationIdChanged = Symbol('operationIdChanged');
 
 /**
  * A web component that renders the documentation page for an API resource built from 
@@ -62,10 +64,24 @@ export default class AmfResourceDocumentationElement extends AmfDocumentationBas
       return;
     }
     this[resourceIdValue] = value;
-    this.requestUpdate('resourceId', value);
+    this.requestUpdate('resourceId', old);
     if (value) {
       setTimeout(() => this.queryGraph(value));
     }
+  }
+
+  get operationId() {
+    return this[operationIdValue];
+  }
+
+  set operationId(value) {
+    const old = this[operationIdValue];
+    if (old === value) {
+      return;
+    }
+    this[operationIdValue] = value;
+    this.requestUpdate('operationId', old);
+    this[operationIdChanged]();
   }
 
   /** 
@@ -100,6 +116,11 @@ export default class AmfResourceDocumentationElement extends AmfDocumentationBas
        */
       resourceId: { type: String, reflect: true },
       /** 
+       * When set it scrolls to the operation with the given id, if exists.
+       * The operation is performed after render.
+       */
+      operationId: { type: String, reflect: true },
+      /** 
        * When set it opens the parameters section
        */
       parametersOpened: { type: Boolean, reflect: true },
@@ -122,6 +143,10 @@ export default class AmfResourceDocumentationElement extends AmfDocumentationBas
     this[urlValue] = undefined;
 
     this.parametersOpened = false;
+    /**
+     * @type {string}
+     */
+    this.operationId = undefined;
 
     this[serverCreatedHandler] = this[serverCreatedHandler].bind(this);
     this[serverUpdatedHandler] = this[serverUpdatedHandler].bind(this);
@@ -176,6 +201,39 @@ export default class AmfResourceDocumentationElement extends AmfDocumentationBas
     this[queryingValue] = false;
     this[computeUrlValue]();
     await this.requestUpdate();
+    if (this.operationId) {
+      // this timeout gives few milliseconds for the operations to render.
+      setTimeout(() => {
+        // Todo: operations should inform the parent that the view is rendered
+        // and after that this function should be called.
+        this.scrollToOperation(this.operationId);
+      }, 200);
+    }
+  }
+
+  /**
+   * Scrolls the view to the operation, when present in the DOM.
+   * @param {string} id The operation domain id to scroll into.
+   */
+  scrollToOperation(id) {
+    const elm = this.shadowRoot.querySelector(`amf-operation-document[operationId="${id}"]`);
+    if (!elm) {
+      return;
+    }
+    elm.scrollIntoView({block: 'start', inline: 'nearest', behavior: 'smooth'});
+  }
+
+  /**
+   * Scrolls to the selected operation after view update.
+   */
+  async [operationIdChanged]() {
+    await this.updateComplete;
+    const { operationId } = this;
+    if (operationId) {
+      this.scrollToOperation(operationId);
+    } else {
+      this.scrollIntoView({block: 'start', inline: 'nearest', behavior: 'smooth'});
+    }
   }
 
   /**
