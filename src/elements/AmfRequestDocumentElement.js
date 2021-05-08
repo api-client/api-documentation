@@ -212,6 +212,7 @@ export default class AmfRequestDocumentElement extends AmfDocumentationBase {
     if (this.querying) {
       return;
     }
+    this.mimeType = undefined;
     this[queryingValue] = true;
     await this[queryRequest](requestId);
     await this[queryPayloads]();
