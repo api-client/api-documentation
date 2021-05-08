@@ -77,4 +77,8 @@ export default css`
 .media-type span {
   font-weight: 500;
 }
+
+.amf-media-types {
+  margin: 12px 0;
+}
 `;

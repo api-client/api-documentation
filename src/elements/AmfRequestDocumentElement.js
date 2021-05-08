@@ -2,6 +2,9 @@
 import { html } from 'lit-element';
 import { StoreEvents, StoreEventTypes } from '@api-client/amf-store';
 import { TelemetryEvents, ReportingEvents } from '@api-client/graph-project';
+import '@anypoint-web-components/anypoint-dropdown-menu/anypoint-dropdown-menu.js';
+import '@anypoint-web-components/anypoint-listbox/anypoint-listbox.js';
+import '@anypoint-web-components/anypoint-item/anypoint-item.js';
 import commonStyles from './styles/Common.js';
 import elementStyles from './styles/ApiRequest.js';
 import '../../amf-parameter-document.js';
@@ -15,6 +18,7 @@ import { AmfDocumentationBase, paramsSectionTemplate, schemaItemTemplate } from 
 /** @typedef {import('@api-client/amf-store').ApiStoreStateUpdateEvent} ApiStoreStateUpdateEvent */
 /** @typedef {import('@api-client/amf-store').ApiStoreStateCreateEvent} ApiStoreStateCreateEvent */
 /** @typedef {import('@api-client/amf-store').ApiStoreStateDeleteEvent} ApiStoreStateDeleteEvent */
+/** @typedef {import('@anypoint-web-components/anypoint-listbox').AnypointListbox} AnypointListbox */
 
 export const requestIdValue = Symbol('requestIdValue');
 export const queryingValue = Symbol('queryingValue');
@@ -31,7 +35,7 @@ export const payloadSelectorTemplate = Symbol('payloadSelectorTemplate');
 export const requestUpdatedHandler = Symbol('requestUpdatedHandler');
 export const payloadCreatedHandler = Symbol('payloadCreatedHandler');
 export const payloadDeletedHandler = Symbol('payloadDeletedHandler');
-export const mediaTypeBlurHandler = Symbol('mediaTypeChangeHandler');
+export const mediaTypeSelectHandler = Symbol('mediaTypeSelectHandler');
 
 /**
  * A web component that renders the documentation page for an API request object.
@@ -294,9 +298,9 @@ export default class AmfRequestDocumentElement extends AmfDocumentationBase {
   /**
    * @param {Event} e
    */
-  [mediaTypeBlurHandler](e) {
-    const select = /** @type HTMLSelectElement */ (e.target);
-    const mime = select.value;
+  [mediaTypeSelectHandler](e) {
+    const select = /** @type AnypointListbox */ (e.target);
+    const mime = String(select.selected);
     this.mimeType = mime;
   }
 
@@ -380,12 +384,22 @@ export default class AmfRequestDocumentElement extends AmfDocumentationBase {
     if (!mime.length) {
       return '';
     }
+    const mimeType = this.mimeType || mime[0];
     return html`
     <div class="media-type-selector">
-      <label id="mediaTypeSelector">Select media type</label>
-      <select name="mediaType" aria-describedby="mediaTypeSelector" @blur="${this[mediaTypeBlurHandler]}" @change="${this[mediaTypeBlurHandler]}">
-        ${mime.map((type) => html`<option value="${type}">${type}</option>`)}
-      </select>
+      <anypoint-dropdown-menu
+        class="amf-media-types"
+      >
+        <label slot="label">Body content type</label>
+        <anypoint-listbox
+          slot="dropdown-content"
+          attrforselected="data-value"
+          .selected="${mimeType}"
+          @selected-changed="${this[mediaTypeSelectHandler]}"
+        >
+          ${mime.map((type) => html`<anypoint-item data-value="${type}">${type}</anypoint-item>`)}
+        </anypoint-listbox>
+      </anypoint-dropdown-menu>
     </div>
     `;
   }
