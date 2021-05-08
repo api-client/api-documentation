@@ -41,6 +41,7 @@ import { ShapeExampleGenerator } from '../generators/ShapeExampleGenerator.js';
 /** @typedef {import('../types').SchemaExample} SchemaExample */
 
 export const schemaIdValue = Symbol('schemaIdValue');
+export const mimeTypeValue = Symbol('mimeTypeValue');
 export const queryingValue = Symbol('queryingValue');
 export const querySchema = Symbol('querySchema');
 export const examplesValue = Symbol('examplesValue');
@@ -109,6 +110,25 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
    */
   get querying() {
     return this[queryingValue] || false;
+  }
+
+  get mimeType() {
+    return this[mimeTypeValue];
+  }
+
+  set mimeType(value) {
+    const old = this[mimeTypeValue];
+    if (old === value) {
+      return;
+    }
+    this[mimeTypeValue] = value;
+    this.requestUpdate('mimeType', old);
+    if (value) {
+      setTimeout(() => {
+        this[processSchema]();
+        this.requestUpdate();
+      });
+    }
   }
 
   static get properties() {
@@ -222,7 +242,10 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
       this[examplesValue] = undefined;
       return;
     }
-    const { examples } = type;
+    let { examples } = type;
+    if (Array.isArray(examples) && examples.length) {
+      examples = examples.filter((i) => !!i.value || !!i.structuredValue);
+    }
     if (Array.isArray(examples) && examples.length) {
       this[examplesValue] = this[evaluateExamples](examples);
     } else {
@@ -459,12 +482,31 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
    */
   [unionShapeTemplate](schema) {
     const unionTemplate = unionDetailsTemplate(schema);
-    const { anyOf } = schema;
+    const { anyOf, or, and } = schema;
     if (Array.isArray(anyOf) && anyOf.length) {
       const schemaContent = this[anyOfUnionTemplate](schema.id, anyOf);
       return html`
       ${unionTemplate}
       ${schemaContent}
+      `;
+    }
+    if (Array.isArray(or) && or.length) {
+      const schemaContent = this[anyOfUnionTemplate](schema.id, or);
+      return html`
+      ${unionTemplate}
+      ${schemaContent}
+      `;
+    }
+    if (Array.isArray(and) && and.length) {
+      const items = and.map((item) => html`
+      <div class="and-union-item">
+        ${this[schemaContentTemplate](item)}
+      </div>
+      `);
+      return html`
+      <div class="combined-union">
+        ${items}
+      </div>
       `;
     }
     return unionTemplate;
@@ -533,7 +575,17 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
    * @returns {TemplateResult} The template for the schema shape.
    */
   [schemaShapeTemplate](schema) {
-    return html`Fix me (schema): ${schema.id}`;
+    const { raw } = schema;
+    if (!raw) {
+      return html`
+      <div class="empty-info">Schema is not defined for this message.</div>
+      `;
+    }
+    return html`
+    <div class="schema-content">
+    <pre class="code-value"><code>${raw}</code></pre>
+    </div>
+    `;
   }
 
   /**
@@ -570,10 +622,13 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
 
   /**
    * @param {ApiAnyShape} schema
-   * @returns {TemplateResult} The template for the Any shape.
+   * @returns {TemplateResult|string} The template for the Any shape.
    */
-  // eslint-disable-next-line no-unused-vars
   [anyShapeTemplate](schema) {
+    const { and, or } = schema;
+    if (and.length || or.length) {
+      return this[unionShapeTemplate](/** @type ApiUnionShape */ (schema));
+    }
     return html`<p class="any-info">Any schema is accepted as the value here.</p>`;
   }
 

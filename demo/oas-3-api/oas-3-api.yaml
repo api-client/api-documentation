@@ -30,7 +30,6 @@ servers:
           - '8443'
           - '443'
         default: '8443'
-        example: '443'
       basePath:
         default: v2
 
@@ -46,13 +45,7 @@ components:
         code:
           type: integer
           format: int32
-          examples:
-            minimum:
-              value: 200
-              summary: The minimal code value
-            maximum:
-              value: 599
-              summary: The highest code value.
+          example: 200
         message:
           type: string
     Category:
@@ -180,7 +173,7 @@ paths:
         '201':
           description: Successful creation
           content:
-            appliication/json:
+            application/json:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/Article"

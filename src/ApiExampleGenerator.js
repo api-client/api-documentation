@@ -1,6 +1,7 @@
 /* eslint-disable class-methods-use-this */
 import { JsonExampleGenerator } from './generators/JsonExampleGenerator.js';
 import { XmlExampleGenerator } from './generators/XmlExampleGenerator.js';
+import { UrlEncodedGenerator } from './generators/UrlEncodedGenerator.js';
 
 /** @typedef {import('@api-client/amf-store').ApiExample} ApiExample */
 /** @typedef {import('@api-client/amf-store').ApiDataNode} ApiDataNode */
@@ -25,7 +26,7 @@ export class ApiExampleGenerator {
     if (!value && !structuredValue) {
       return null;
     }
-    if (!value) {
+    if (!value && mime) {
       return this.fromStructuredValue(mime, structuredValue);
     }
     if (!mime) {
@@ -52,6 +53,9 @@ export class ApiExampleGenerator {
     if (mime.includes('xml')) {
       return trimmed.startsWith('<');
     }
+    if (mime.includes('x-www-form-urlencoded')) {
+      return mime.includes('=');
+    }
     return true;
   }
 
@@ -68,6 +72,10 @@ export class ApiExampleGenerator {
     }
     if (mime.includes('xml')) {
       const generator = new XmlExampleGenerator(structuredValue);
+      return generator.generate();
+    }
+    if (mime.includes('x-www-form-urlencoded')) {
+      const generator = new UrlEncodedGenerator(structuredValue);
       return generator.generate();
     }
     return null;

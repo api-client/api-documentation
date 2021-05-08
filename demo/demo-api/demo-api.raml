@@ -42,6 +42,7 @@ types:
   Image: !include resourceTypes/image.raml
   Resource: !include resourceTypes/resource.raml
   AppPerson: !include resourceTypes/app-person.raml
+  DemoPerson: !include types/DemoPerson.raml
   Product: !include resourceTypes/product.raml
   ErrorResource:
     description: A response that is errored
@@ -631,3 +632,41 @@ securitySchemes:
             # example: Sun, 28 Feb 2016 16:41:41 GMT
             format: rfc2616 
             # rfc3339 or rfc2616
+/body-types:
+  /json:
+    post:
+      body: 
+        application/json:
+          type: AppPerson
+  /xml:
+    post:
+      body:
+        application/xml:
+          type: AppPerson
+  /form:
+    post:
+      body:
+        application/x-www-form-urlencoded:
+          type: AppPerson
+  /multi-parts:
+    post:
+      body:
+        multipart/form-data:
+          type: AppPerson
+/generated-example:
+  post:
+    body:
+      application/json:
+        type: DemoPerson
+      application/xml:
+        type: DemoPerson
+      application/x-www-form-urlencoded:
+        type: DemoPerson
+  put:
+    body:
+      application/json:
+        type: DemoPerson[]
+      application/xml:
+        type: DemoPerson[]
+      application/x-www-form-urlencoded:
+        type: DemoPerson[]

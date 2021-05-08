@@ -59,8 +59,14 @@ export default css`
 .code-value {
   margin: 0 4px;
   padding: 0 4px;
-  font-family: var(--code-font-family);
   background-color: var(--code-background-color);
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.code-value,
+.code-value code {
+  font-family: var(--code-font-family);
 }
 
 .property-details {
