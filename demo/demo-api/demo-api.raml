@@ -38,6 +38,7 @@ annotationTypes:
         required: true
 uses:
   ExampleType: resourceTypes/example-types.raml
+  DemoTypes: library/demo-types.raml
 types:
   Image: !include resourceTypes/image.raml
   Resource: !include resourceTypes/resource.raml
@@ -670,3 +671,23 @@ securitySchemes:
         type: DemoPerson[]
       application/x-www-form-urlencoded:
         type: DemoPerson[]
+/demo-types:
+  post:
+    body: 
+      application/json:
+        type: DemoTypes.Pet
+    responses: 
+      200:
+        body: 
+          application/json:
+            type: DemoTypes.Dog | DemoTypes.Cat
+/raml-and-union:
+  post:
+    body: 
+      application/json:
+        type: [DemoTypes.Mamal, DemoTypes.Pet]
+/raml-and-or-union:
+  post:
+    body: 
+      application/json:
+        type: [DemoTypes.Mamal, DemoTypes.Pet | DemoTypes.Cat]

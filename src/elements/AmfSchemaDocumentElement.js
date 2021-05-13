@@ -146,6 +146,10 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
        * when examples are not defined in the schema.
        */
       forceExamples: { type: Boolean, reflect: true },
+      /** 
+       * When set it ignores rendering schema title.
+       */
+      hideTitle: { type: Boolean, reflect: true },
     };
   }
 
@@ -172,6 +176,7 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
      */
     this.mimeType = undefined;
     this.forceExamples = false;
+    this.hideTitle = false;
 
     this[schemaUpdatedHandler] = this[schemaUpdatedHandler].bind(this);
   }
@@ -355,6 +360,9 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
    * @returns {TemplateResult|string} The template for the schema title.
    */
   [titleTemplate]() {
+    if (this.hideTitle) {
+      return '';
+    }
     const schema = this[schemaValue];
     const { name, displayName } = schema;
     const label = displayName || name;
