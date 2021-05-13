@@ -32,7 +32,7 @@ class ComponentPage extends DemoPage {
     this.store = new AmfStoreService(window, {
       amfLocation: '/node_modules/@api-client/amf-store/amf-bundle.js',
     });
-    this.componentName = 'api-operation';
+    this.componentName = 'amf-operation-document';
     this.actionHandler = this.actionHandler.bind(this);
     window.addEventListener(NavigationEventTypes.navigate, this.navigationHandler.bind(this));
     window.addEventListener(NavigationEventTypes.navigateExternal, this.externalNavigationHandler.bind(this));

@@ -9,7 +9,7 @@ import '@anypoint-web-components/anypoint-checkbox/anypoint-checkbox.js';
 import { AmfStoreService } from '@api-client/amf-store';
 import { NavigationEventTypes, NavigationEditCommands, NavigationContextMenu, ReportingEventTypes } from '@api-client/graph-project';
 import '@api-client/graph-project/graph-api-navigation.js';
-import '../amf-resource-document.js';
+import '../amf-documentation-document.js';
 
 /** @typedef {import('@api-client/graph-project').APIGraphNavigationEvent} APIGraphNavigationEvent */
 /** @typedef {import('@api-client/graph-project').APIExternalNavigationEvent} APIExternalNavigationEvent */
@@ -20,7 +20,7 @@ class ComponentPage extends DemoPage {
     super();
     this.initObservableProperties([
       'loaded', 'initialized',
-      'selectedId', 'selectedType', 'selectedOperation',
+      'selectedId', 'selectedType',
       'apiId',
     ]);
     this.loaded = false;
@@ -28,12 +28,11 @@ class ComponentPage extends DemoPage {
     this.renderViewControls = true;
     this.selectedId = undefined;
     this.selectedType = undefined;
-    this.selectedOperation = undefined;
     this.apiId = undefined;
     this.store = new AmfStoreService(window, {
       amfLocation: '/node_modules/@api-client/amf-store/amf-bundle.js',
     });
-    this.componentName = 'amf-endpoint-document';
+    this.componentName = 'amf-documentation-document';
     this.actionHandler = this.actionHandler.bind(this);
     window.addEventListener(NavigationEventTypes.navigate, this.navigationHandler.bind(this));
     window.addEventListener(NavigationEventTypes.navigateExternal, this.externalNavigationHandler.bind(this));
@@ -104,22 +103,13 @@ class ComponentPage extends DemoPage {
    * @param {APIGraphNavigationEvent} e 
    */
   navigationHandler(e) {
-    const { graphId, graphType, options, } = e;
-    if (graphType === 'endpoint') {
+    const { graphId, graphType, } = e;
+    if (graphType === 'documentation') {
       this.selectedId = graphId;
       this.selectedType = graphType;
-      this.selectedOptions = options;
-      this.selectedOperation = undefined;
-    } else if (graphType === 'operation') {
-      this.selectedId = options.parent;
-      this.selectedType = 'endpoint';
-      this.selectedOptions = options;
-      this.selectedOperation = graphId;
     } else {
       this.selectedId = undefined;
       this.selectedType = undefined;
-      this.selectedOptions = undefined;
-      this.selectedOperation = undefined;
     }
   }
 
@@ -175,9 +165,9 @@ class ComponentPage extends DemoPage {
   }
 
   _componentTemplate() {
-    const { demoStates, darkThemeActive, selectedId, selectedOperation } = this;
+    const { demoStates, darkThemeActive, selectedId } = this;
     if (!selectedId) {
-      return html`<p>Select API operation in the navigation</p>`;
+      return html`<p>Select API documentation in the navigation</p>`;
     }
     return html`
     <arc-interactive-demo
@@ -185,12 +175,11 @@ class ComponentPage extends DemoPage {
       @state-changed="${this._demoStateHandler}"
       ?dark="${darkThemeActive}"
     >
-      <amf-resource-document
-        .resourceId="${selectedId}"
-        .operationId="${selectedOperation}"
+      <amf-documentation-document
+        .documentationId="${selectedId}"
         slot="content"
       >
-      </amf-resource-document>
+      </amf-documentation-document>
 
       <label slot="options" id="mainOptionsLabel">Options</label>
       <anypoint-checkbox
