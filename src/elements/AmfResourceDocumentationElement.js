@@ -7,7 +7,13 @@ import '@advanced-rest-client/arc-marked/arc-marked.js';
 import elementStyles from './styles/ApiResource.js';
 import commonStyles from './styles/Common.js';
 import '../../amf-operation-document.js'
-import { AmfDocumentationBase, paramsSectionTemplate, schemaItemTemplate } from './AmfDocumentationBase.js';
+import { 
+  AmfDocumentationBase, 
+  paramsSectionTemplate, 
+  schemaItemTemplate,
+  queryingValue,
+} from './AmfDocumentationBase.js';
+import '../../amf-parameter-document.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiEndPoint} ApiEndPoint */
@@ -16,9 +22,7 @@ import { AmfDocumentationBase, paramsSectionTemplate, schemaItemTemplate } from 
 /** @typedef {import('@api-client/amf-store').ApiStoreStateUpdateEvent} ApiStoreStateUpdateEvent */
 /** @typedef {import('@api-client/amf-store').ApiStoreStateDeleteEvent} ApiStoreStateDeleteEvent */
 
-export const resourceIdValue = Symbol('resourceIdValue');
 export const operationIdValue = Symbol('operationIdValue');
-export const queryingValue = Symbol('queryingValue');
 export const queryEndpoint = Symbol('queryEndpoint');
 export const queryServers = Symbol('queryServers');
 export const endpointValue = Symbol('endpointValue');
@@ -48,28 +52,6 @@ export default class AmfResourceDocumentationElement extends AmfDocumentationBas
     return [elementStyles, commonStyles, markdownStyles];
   }
 
-  /** 
-   * @returns {string|undefined} The domain id of the resource to render.
-   */
-  get resourceId() {
-    return this[resourceIdValue];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the resource to render.
-   */
-  set resourceId(value) {
-    const old = this[resourceIdValue];
-    if (old === value) {
-      return;
-    }
-    this[resourceIdValue] = value;
-    this.requestUpdate('resourceId', old);
-    if (value) {
-      setTimeout(() => this.queryGraph(value));
-    }
-  }
-
   get operationId() {
     return this[operationIdValue];
   }
@@ -82,13 +64,6 @@ export default class AmfResourceDocumentationElement extends AmfDocumentationBas
     this[operationIdValue] = value;
     this.requestUpdate('operationId', old);
     this[operationIdChanged]();
-  }
-
-  /** 
-   * @returns {boolean} When true then the element is currently querying for the graph data.
-   */
-  get querying() {
-    return this[queryingValue] || false;
   }
 
   get serverId() {
@@ -111,10 +86,6 @@ export default class AmfResourceDocumentationElement extends AmfDocumentationBas
        * If not set a first server in the API servers array is used.
        */
       serverId: { type: String, reflect: true },
-      /** 
-       * The domain id of the resource to render.
-       */
-      resourceId: { type: String, reflect: true },
       /** 
        * When set it scrolls to the operation with the given id, if exists.
        * The operation is performed after render.
@@ -155,13 +126,6 @@ export default class AmfResourceDocumentationElement extends AmfDocumentationBas
     this[operationDeletedHandler] = this[operationDeletedHandler].bind(this);
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.resourceId) {
-      this.queryGraph(this.resourceId);
-    }
-  }
-
   /**
    * @param {EventTarget} node
    */
@@ -188,15 +152,15 @@ export default class AmfResourceDocumentationElement extends AmfDocumentationBas
 
   /**
    * Queries the graph store for the API Endpoint data.
-   * @param {string} resourceId The resource id to render the documentation for.
    * @returns {Promise<void>}
    */
-  async queryGraph(resourceId) {
+  async queryGraph() {
     if (this.querying) {
       return;
     }
+    const { domainId } = this;
     this[queryingValue] = true;
-    await this[queryEndpoint](resourceId);
+    await this[queryEndpoint](domainId);
     await this[queryServers]();
     this[queryingValue] = false;
     this[computeUrlValue]();
@@ -216,7 +180,7 @@ export default class AmfResourceDocumentationElement extends AmfDocumentationBas
    * @param {string} id The operation domain id to scroll into.
    */
   scrollToOperation(id) {
-    const elm = this.shadowRoot.querySelector(`amf-operation-document[operationId="${id}"]`);
+    const elm = this.shadowRoot.querySelector(`amf-operation-document[domainId="${id}"]`);
     if (!elm) {
       return;
     }
@@ -355,7 +319,7 @@ export default class AmfResourceDocumentationElement extends AmfDocumentationBas
    */
   [operationCreatedHandler](e) {
     const { graphId, domainParent } = e.detail;
-    if (!this.resourceId || domainParent !== this.resourceId) {
+    if (!this.domainId || domainParent !== this.domainId) {
       return;
     }
     const endPoint = this[endpointValue];
@@ -369,7 +333,7 @@ export default class AmfResourceDocumentationElement extends AmfDocumentationBas
    */
   async [operationDeletedHandler](e) {
     // const { graphId, domainParent } = e.detail;
-    // if (!this.resourceId || domainParent !== this.resourceId) {
+    // if (!this.domainId || domainParent !== this.domainId) {
     //   return;
     // }
     // const endPoint = this[endpointValue];
@@ -380,10 +344,10 @@ export default class AmfResourceDocumentationElement extends AmfDocumentationBas
     //   this.requestUpdate();
     // }
     const { domainParent } = e.detail;
-    if (!this.resourceId || domainParent !== this.resourceId) {
+    if (!this.domainId || domainParent !== this.domainId) {
       return;
     }
-    await this[queryEndpoint](this.resourceId);
+    await this[queryEndpoint](this.domainId);
     await this.requestUpdate();
   }
 
@@ -470,7 +434,7 @@ export default class AmfResourceDocumentationElement extends AmfDocumentationBas
    */
   [operationTemplate](id) {
     const { serverId } = this;
-    return html`<amf-operation-document .operationId="${id}" .serverId="${serverId}" responsesOpened></amf-operation-document>`;
+    return html`<amf-operation-document .domainId="${id}" .serverId="${serverId}" responsesOpened></amf-operation-document>`;
   }
 
   [parametersTemplate]() {

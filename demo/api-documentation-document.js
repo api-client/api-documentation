@@ -125,7 +125,7 @@ class ComponentPage extends DemoPage {
 
   contentTemplate() {
     return html`
-      <h2>API endpoint</h2>
+      <h2>API documentation</h2>
       ${this._demoTemplate()}
       ${this._dataTemplate()}
     `;
@@ -176,7 +176,7 @@ class ComponentPage extends DemoPage {
       ?dark="${darkThemeActive}"
     >
       <amf-documentation-document
-        .documentationId="${selectedId}"
+        .domainId="${selectedId}"
         slot="content"
       >
       </amf-documentation-document>

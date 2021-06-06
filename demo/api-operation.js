@@ -178,7 +178,7 @@ class ComponentPage extends DemoPage {
       ?dark="${darkThemeActive}"
     >
       <amf-operation-document
-        .operationId="${selectedId}"
+        .domainId="${selectedId}"
         slot="content"
       >
       </amf-operation-document>

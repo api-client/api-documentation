@@ -7,10 +7,14 @@ import '@anypoint-web-components/anypoint-listbox/anypoint-listbox.js';
 import '@anypoint-web-components/anypoint-item/anypoint-item.js';
 import commonStyles from './styles/Common.js';
 import elementStyles from './styles/ApiRequest.js';
-import '../../amf-parameter-document.js';
 import '../../amf-payload-document.js';
-import { AmfDocumentationBase, paramsSectionTemplate, schemaItemTemplate } from './AmfDocumentationBase.js';
-
+import { 
+  AmfDocumentationBase, 
+  paramsSectionTemplate, 
+  schemaItemTemplate,
+  queryingValue,
+} from './AmfDocumentationBase.js';
+import '../../amf-parameter-document.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiRequest} ApiRequest */
@@ -20,8 +24,6 @@ import { AmfDocumentationBase, paramsSectionTemplate, schemaItemTemplate } from 
 /** @typedef {import('@api-client/amf-store').ApiStoreStateDeleteEvent} ApiStoreStateDeleteEvent */
 /** @typedef {import('@anypoint-web-components/anypoint-listbox').AnypointListbox} AnypointListbox */
 
-export const requestIdValue = Symbol('requestIdValue');
-export const queryingValue = Symbol('queryingValue');
 export const queryRequest = Symbol('queryRequest');
 export const requestValue = Symbol('requestValue');
 export const queryPayloads = Symbol('queryPayloads');
@@ -43,35 +45,6 @@ export const mediaTypeSelectHandler = Symbol('mediaTypeSelectHandler');
 export default class AmfRequestDocumentElement extends AmfDocumentationBase {
   static get styles() {
     return [commonStyles, elementStyles];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the API request to render.
-   */
-  get requestId() {
-    return this[requestIdValue];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the API request to render.
-   */
-  set requestId(value) {
-    const old = this[requestIdValue];
-    if (old === value) {
-      return;
-    }
-    this[requestIdValue] = value;
-    this.requestUpdate('requestId', old);
-    if (value) {
-      setTimeout(() => this.queryGraph(value));
-    }
-  }
-
-  /** 
-   * @returns {boolean} When true then the element is currently querying for the graph data.
-   */
-  get querying() {
-    return this[queryingValue] || false;
   }
 
   /**
@@ -125,10 +98,6 @@ export default class AmfRequestDocumentElement extends AmfDocumentationBase {
   static get properties() {
     return {
       /** 
-       * The domain id of the API request to render.
-       */
-      requestId: { type: String, reflect: true },
-      /** 
        * When set it opens the parameters section
        */
       parametersOpened: { type: Boolean, reflect: true },
@@ -176,13 +145,6 @@ export default class AmfRequestDocumentElement extends AmfDocumentationBase {
     this[payloadDeletedHandler] = this[payloadDeletedHandler].bind(this);
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.requestId) {
-      this.queryGraph(this.requestId);
-    }
-  }
-
   /**
    * @param {EventTarget} node
    */
@@ -205,16 +167,16 @@ export default class AmfRequestDocumentElement extends AmfDocumentationBase {
 
   /**
    * Queries the graph store for the API Request data.
-   * @param {string} requestId The domain id of the API request to render.
    * @returns {Promise<void>}
    */
-  async queryGraph(requestId) {
+  async queryGraph() {
     if (this.querying) {
       return;
     }
+    const { domainId } = this;
     this.mimeType = undefined;
     this[queryingValue] = true;
-    await this[queryRequest](requestId);
+    await this[queryRequest](domainId);
     await this[queryPayloads]();
     this[queryingValue] = false;
     await this.requestUpdate();
@@ -256,7 +218,7 @@ export default class AmfRequestDocumentElement extends AmfDocumentationBase {
    */
   [requestUpdatedHandler](e) {
     const { graphId, item } = e.detail;
-    if (graphId !== this.requestId) {
+    if (graphId !== this.domainId) {
       return;
     }
     this[requestValue] = item;
@@ -268,7 +230,7 @@ export default class AmfRequestDocumentElement extends AmfDocumentationBase {
    */
   [payloadCreatedHandler](e) {
     const { item, domainParent } = e.detail;
-    if (domainParent !== this.requestId) {
+    if (domainParent !== this.domainId) {
       return;
     }
     if (!this[payloadsValue]) {
@@ -283,7 +245,7 @@ export default class AmfRequestDocumentElement extends AmfDocumentationBase {
    */
   [payloadDeletedHandler](e) {
     const { graphId, domainParent } = e.detail;
-    if (domainParent !== this.requestId) {
+    if (domainParent !== this.domainId) {
       return;
     }
     if (!this[payloadsValue]) {
@@ -363,7 +325,7 @@ export default class AmfRequestDocumentElement extends AmfDocumentationBase {
     }
     const content = html`
     ${this[payloadSelectorTemplate]()}
-    <amf-payload-document .payloadId="${payload.id}"></amf-payload-document>
+    <amf-payload-document .domainId="${payload.id}"></amf-payload-document>
     `;
     return this[paramsSectionTemplate]('Request body', 'payloadOpened', content);
   }

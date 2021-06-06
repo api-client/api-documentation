@@ -1,6 +1,5 @@
 /* eslint-disable class-methods-use-this */
-import { LitElement, html } from 'lit-element';
-import { EventsTargetMixin } from '@advanced-rest-client/events-target-mixin';
+import { html } from 'lit-element';
 import { StoreEvents, StoreEventTypes } from '@api-client/amf-store';
 import { TelemetryEvents, ReportingEvents } from '@api-client/graph-project';
 import markdownStyles from '@advanced-rest-client/markdown-styles/markdown-styles.js';
@@ -10,6 +9,10 @@ import elementStyles from './styles/ApiParameter.js';
 import schemaStyles from './styles/SchemaCommon.js';
 import { readPropertyTypeLabel } from '../Utils.js';
 import { paramNameTemplate, typeValueTemplate, descriptionValueTemplate, detailsTemplate } from './SchemaCommonTemplates.js';
+import { 
+  AmfDocumentationBase,
+  queryingValue,
+} from './AmfDocumentationBase.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiParameter} ApiParameter */
@@ -19,8 +22,6 @@ import { paramNameTemplate, typeValueTemplate, descriptionValueTemplate, details
 /** @typedef {import('@api-client/amf-store').ApiScalarNode} ApiScalarNode */
 /** @typedef {import('@api-client/amf-store').ApiStoreStateUpdateEvent} ApiStoreStateUpdateEvent */
 
-export const parameterIdValue = Symbol('requestIdValue');
-export const queryingValue = Symbol('queryingValue');
 export const queryParameter = Symbol('queryParameter');
 export const querySchema = Symbol('querySchema');
 export const parameterValue = Symbol('parameterValue');
@@ -33,47 +34,9 @@ export const schemaUpdatedHandler = Symbol('schemaUpdatedHandler');
 /**
  * A web component that renders the documentation for a single request / response parameter.
  */
-export default class AmfParameterDocumentElement extends EventsTargetMixin(LitElement) {
+export default class AmfParameterDocumentElement extends AmfDocumentationBase {
   static get styles() {
     return [markdownStyles, commonStyles, schemaStyles, elementStyles];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the API parameter to render.
-   */
-  get parameterId() {
-    return this[parameterIdValue];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the API parameter to render.
-   */
-  set parameterId(value) {
-    const old = this[parameterIdValue];
-    if (old === value) {
-      return;
-    }
-    this[parameterIdValue] = value;
-    this.requestUpdate('parameterId', old);
-    if (value) {
-      setTimeout(() => this.queryGraph(value));
-    }
-  }
-
-  /** 
-   * @returns {boolean} When true then the element is currently querying for the graph data.
-   */
-  get querying() {
-    return this[queryingValue] || false;
-  }
-
-  static get properties() {
-    return {
-      /** 
-       * The domain id of the API parameter to render.
-       */
-      parameterId: { type: String, reflect: true },
-    };
   }
 
   constructor() {
@@ -94,13 +57,6 @@ export default class AmfParameterDocumentElement extends EventsTargetMixin(LitEl
     this[schemaUpdatedHandler] = this[schemaUpdatedHandler].bind(this);
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.parameterId) {
-      this.queryGraph(this.parameterId);
-    }
-  }
-
   /**
    * @param {EventTarget} node
    */
@@ -119,15 +75,15 @@ export default class AmfParameterDocumentElement extends EventsTargetMixin(LitEl
 
   /**
    * Queries the graph store for the API Parameter data.
-   * @param {string} parameterId The domain id of the API parameter to render.
    * @returns {Promise<void>}
    */
-  async queryGraph(parameterId) {
+  async queryGraph() {
     if (this.querying) {
       return;
     }
+    const { domainId } = this;
     this[queryingValue] = true;
-    await this[queryParameter](parameterId);
+    await this[queryParameter](domainId);
     await this[querySchema]();
     this[computeParamType]();
     this[queryingValue] = false;

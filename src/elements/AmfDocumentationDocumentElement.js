@@ -7,16 +7,15 @@ import markdownStyles from '@advanced-rest-client/markdown-styles/markdown-style
 import '@advanced-rest-client/arc-marked/arc-marked.js';
 import elementStyles from './styles/ApiDocumentationDocument.js';
 import commonStyles from './styles/Common.js';
-import '../../amf-request-document.js'
-import '../../amf-response-document.js'
-import { AmfDocumentationBase } from './AmfDocumentationBase.js';
+import { 
+  AmfDocumentationBase,
+  queryingValue,
+} from './AmfDocumentationBase.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiDocumentation} ApiDocumentation */
 /** @typedef {import('@api-client/amf-store').ApiStoreStateUpdateEvent} ApiStoreStateUpdateEvent */
 
-export const documentationIdValue = Symbol('documentationIdValue');
-export const queryingValue = Symbol('queryingValue');
 export const documentationValue = Symbol('documentationValue');
 export const titleTemplate = Symbol('titleTemplate');
 export const descriptionTemplate = Symbol('descriptionTemplate');
@@ -31,44 +30,6 @@ export default class AmfDocumentationDocumentElement extends AmfDocumentationBas
     return [elementStyles, commonStyles, HttpStyles.default, markdownStyles];
   }
 
-  /** 
-   * @returns {string|undefined} The domain id of the documentation to render.
-   */
-  get documentationId() {
-    return this[documentationIdValue];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the documentation to render.
-   */
-  set documentationId(value) {
-    const old = this[documentationIdValue];
-    if (old === value) {
-      return;
-    }
-    this[documentationIdValue] = value;
-    this.requestUpdate('documentationId', old);
-    if (value) {
-      setTimeout(() => this.queryGraph(value));
-    }
-  }
-
-  /** 
-   * @returns {boolean} When true then the element is currently querying for the graph data.
-   */
-  get querying() {
-    return this[queryingValue] || false;
-  }
-
-  static get properties() {
-    return {
-      /** 
-       * The domain id of the documentation to render.
-       */
-      documentationId: { type: String, reflect: true },
-    };
-  }
-
   constructor() {
     super();
     /**
@@ -76,13 +37,6 @@ export default class AmfDocumentationDocumentElement extends AmfDocumentationBas
      */
     this[documentationValue] = undefined;
     this[documentationUpdatedHandler] = this[documentationUpdatedHandler].bind(this);
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.documentationId) {
-      this.queryGraph(this.documentationId);
-    }
   }
 
   /**
@@ -103,14 +57,14 @@ export default class AmfDocumentationDocumentElement extends AmfDocumentationBas
 
   /**
    * Queries the graph store for the API Documentation data.
-   * @param {string} documentationId The operation id to render the documentation for.
    * @returns {Promise<void>}
    */
-  async queryGraph(documentationId) {
+  async queryGraph() {
     if (this.querying) {
       return;
     }
-    if (!documentationId) {
+    const { domainId } = this;
+    if (!domainId) {
       this[documentationValue] = undefined;
       this.requestUpdate();
       return;
@@ -118,7 +72,7 @@ export default class AmfDocumentationDocumentElement extends AmfDocumentationBas
     this[queryingValue] = true;
     this.requestUpdate();
     try {
-      const info = await StoreEvents.Documentation.get(this, documentationId);
+      const info = await StoreEvents.Documentation.get(this, domainId);
       // console.log(info);
       this[documentationValue] = info;
     } catch (e) {
@@ -135,8 +89,8 @@ export default class AmfDocumentationDocumentElement extends AmfDocumentationBas
    */
   [documentationUpdatedHandler](e) {
     const { graphId, item } = e.detail;
-    const { documentationId } = this;
-    if (!documentationId || documentationId !== graphId) {
+    const { domainId } = this;
+    if (!domainId || domainId !== graphId) {
       return;
     }
     this[documentationValue] = item;

@@ -33,10 +33,6 @@ servers:
       basePath:
         default: v2
 
-externalDocs:
-  description: ABout this API.
-  url: https://domain.com
-
 components:
   schemas:
     GeneralError:
@@ -45,7 +41,6 @@ components:
         code:
           type: integer
           format: int32
-          example: 200
         message:
           type: string
     Category:
@@ -76,12 +71,6 @@ components:
           description: The title of the article, in CommonMark format.
           type: string
           minLength: 3
-      externalDocs:
-        description: Find more about this type
-        url: https://api.com
-      example:
-        id: "e1h2b3egvg46df5"
-        title: "My new article"
   parameters:
     skipParam:
       name: skip
@@ -110,10 +99,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/GeneralError'
-          example:
-            code: 400
-            message: "Client error"
-            summary: A client request error
   securitySchemes:
     api_key:
       type: apiKey
@@ -127,6 +112,45 @@ components:
           scopes:
             write:pets: modify pets in your account
             read:pets: read your pets
+    
+    BasicAuth:
+      type: http
+      scheme: basic
+
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    
+    OpenID:
+      type: openIdConnect
+      openIdConnectUrl: https://example.com/.well-known/openid-configuration
+    
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://example.com/oauth/authorize
+          tokenUrl: https://example.com/oauth/token
+          scopes:
+            read: Grants read access
+            write: Grants write access
+            admin: Grants access to admin operations
+
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+
+    queryAuth:
+      type: apiKey
+      in: query
+      name: api-key
 
 paths:
   /pets:
@@ -149,12 +173,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Category'
-                example:
-                  - id: 1
-                    name: Category 1
-                  - id: 2
-                    name: Category 2
-
   /default:
     description: A default path to the API
     get:
@@ -173,7 +191,7 @@ paths:
         '201':
           description: Successful creation
           content:
-            application/json:
+            appliication/json:
               schema:
                 allOf:
                   - $ref: "#/components/schemas/Article"
@@ -181,28 +199,3 @@ paths:
                     properties:
                       description:
                         type: string
-              examples:
-                Dinosaurs in the space:
-                  value:
-                    id: b2eb7b82-ad0f-11eb-8529-0242ac130003
-                    title: Dinosaurs in the space
-                  summary: A book about dinosaurs
-                Living on a prayer:
-                  value:
-                    id: b2eb7dc6-ad0f-11eb-8529-0242ac130003
-                    name: Living on a prayer
-                  summary: A book about praying
-            application/xml:
-              schema:
-                $ref: '#/components/schemas/Article'
-              examples:
-                xml:
-                  summary: A sample XML response
-                  value: '<objects><object><id>1</id><name>new</name></object><object><id>2</id></object></objects>'
-            text/html:
-              schema:
-                type: string
-              examples:
-                html:
-                  summary: A list containing two items
-                  value: '<html><body><ul><li>item 1</li><li>item 2</li></ul></body></html>'

@@ -1,7 +1,5 @@
 /* eslint-disable class-methods-use-this */
-import { LitElement, html } from 'lit-element';
-// import { classMap } from 'lit-html/directives/class-map.js';
-import { EventsTargetMixin } from '@advanced-rest-client/events-target-mixin';
+import { html } from 'lit-element';
 import { StoreEvents, StoreEventTypes } from '@api-client/amf-store';
 import { TelemetryEvents, ReportingEvents } from '@api-client/graph-project';
 import markdownStyles from '@advanced-rest-client/markdown-styles/markdown-styles.js';
@@ -24,6 +22,10 @@ import {
 } from './SchemaCommonTemplates.js';
 import { ApiExampleGenerator } from '../ApiExampleGenerator.js';
 import { ShapeExampleGenerator } from '../generators/ShapeExampleGenerator.js';
+import { 
+  AmfDocumentationBase,
+  queryingValue,
+} from './AmfDocumentationBase.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiStoreStateUpdateEvent} ApiStoreStateUpdateEvent */
@@ -40,9 +42,7 @@ import { ShapeExampleGenerator } from '../generators/ShapeExampleGenerator.js';
 /** @typedef {import('@api-client/amf-store').ApiPropertyShape} ApiPropertyShape */
 /** @typedef {import('../types').SchemaExample} SchemaExample */
 
-export const schemaIdValue = Symbol('schemaIdValue');
 export const mimeTypeValue = Symbol('mimeTypeValue');
-export const queryingValue = Symbol('queryingValue');
 export const querySchema = Symbol('querySchema');
 export const examplesValue = Symbol('examplesValue');
 export const evaluateExamples = Symbol('evaluateExamples');
@@ -78,38 +78,9 @@ const complexTypes = [
   ns.aml.vocabularies.shapes.TupleShape,
 ];
 
-export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitElement) {
+export default class AmfSchemaDocumentElement extends AmfDocumentationBase {
   static get styles() {
     return [commonStyles, schemaStyles, elementStyles, markdownStyles];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the API schema to render.
-   */
-  get schemaId() {
-    return this[schemaIdValue];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the API schema to render.
-   */
-  set schemaId(value) {
-    const old = this[schemaIdValue];
-    if (old === value) {
-      return;
-    }
-    this[schemaIdValue] = value;
-    this.requestUpdate('schemaId', old);
-    if (value) {
-      setTimeout(() => this.queryGraph(value));
-    }
-  }
-
-  /** 
-   * @returns {boolean} When true then the element is currently querying for the graph data.
-   */
-  get querying() {
-    return this[queryingValue] || false;
   }
 
   get mimeType() {
@@ -133,10 +104,6 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
 
   static get properties() {
     return {
-      /** 
-       * The domain id of the API schema to render.
-       */
-      schemaId: { type: String, reflect: true },
       /** 
        * The mime type to use to render the examples.
        */
@@ -181,13 +148,6 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
     this[schemaUpdatedHandler] = this[schemaUpdatedHandler].bind(this);
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.schemaId) {
-      this.queryGraph(this.schemaId);
-    }
-  }
-
   /**
    * @param {EventTarget} node
    */
@@ -206,17 +166,17 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
 
   /**
    * Queries the graph store for the API schema data.
-   * @param {string} schemaId The domain id of the API schema to render.
    * @returns {Promise<void>}
    */
-  async queryGraph(schemaId) {
+  async queryGraph() {
     if (this.querying) {
       return;
     }
+    const { domainId } = this;
     this[expandedValue] = [];
     this[selectedUnionsValue] = {};
     this[queryingValue] = true;
-    await this[querySchema](schemaId);
+    await this[querySchema](domainId);
     this[processSchema]();
     this[queryingValue] = false;
     await this.requestUpdate();
@@ -307,7 +267,7 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
    */
   async [schemaUpdatedHandler](e) {
     const { graphId, item } = e.detail;
-    if (graphId !== this.schemaId) {
+    if (graphId !== this.domainId) {
       return;
     }
     this[schemaValue] = item;

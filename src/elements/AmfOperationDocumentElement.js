@@ -11,7 +11,11 @@ import elementStyles from './styles/ApiOperation.js';
 import commonStyles from './styles/Common.js';
 import '../../amf-request-document.js'
 import '../../amf-response-document.js'
-import { AmfDocumentationBase, paramsSectionTemplate } from './AmfDocumentationBase.js';
+import { 
+  AmfDocumentationBase, 
+  paramsSectionTemplate,
+  queryingValue,
+} from './AmfDocumentationBase.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiEndPoint} ApiEndPoint */
@@ -23,8 +27,6 @@ import { AmfDocumentationBase, paramsSectionTemplate } from './AmfDocumentationB
 /** @typedef {import('@api-client/amf-store').ApiStoreStateDeleteEvent} ApiStoreStateDeleteEvent */
 /** @typedef {import('@anypoint-web-components/anypoint-tabs').AnypointTabs} AnypointTabs */
 
-export const operationIdValue = Symbol('operationIdValue');
-export const queryingValue = Symbol('queryingValue');
 export const queryEndpoint = Symbol('queryEndpoint');
 export const queryOperation = Symbol('queryOperation');
 export const queryServers = Symbol('queryServers');
@@ -60,35 +62,6 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
     return [elementStyles, commonStyles, HttpStyles.default, markdownStyles];
   }
 
-  /** 
-   * @returns {string|undefined} The domain id of the operation to render.
-   */
-  get operationId() {
-    return this[operationIdValue];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the operation to render.
-   */
-  set operationId(value) {
-    const old = this[operationIdValue];
-    if (old === value) {
-      return;
-    }
-    this[operationIdValue] = value;
-    this.requestUpdate('operationId', old);
-    if (value) {
-      setTimeout(() => this.queryGraph(value));
-    }
-  }
-
-  /** 
-   * @returns {boolean} When true then the element is currently querying for the graph data.
-   */
-  get querying() {
-    return this[queryingValue] || false;
-  }
-
   get serverId() {
     return this[serverIdValue];
   }
@@ -109,10 +82,6 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
        * If not set a first server in the API servers array is used.
        */
       serverId: { type: String, reflect: true },
-      /** 
-       * The domain id of the operation to render.
-       */
-      operationId: { type: String, reflect: true },
       /** 
        * When set it opens the response section
        */
@@ -160,13 +129,6 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
     this[serverDeletedHandler] = this[serverDeletedHandler].bind(this);
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.operationId) {
-      this.queryGraph(this.operationId);
-    }
-  }
-
   /**
    * @param {EventTarget} node
    */
@@ -193,17 +155,17 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
 
   /**
    * Queries the graph store for the API Operation data.
-   * @param {string} operationId The operation id to render the documentation for.
    * @returns {Promise<void>}
    */
-  async queryGraph(operationId) {
+  async queryGraph() {
     if (this.querying) {
       return;
     }
+    const { domainId } = this;
     this[queryingValue] = true;
-    await this[queryEndpoint](operationId);
+    await this[queryEndpoint](domainId);
     await this[queryServers]();
-    await this[queryOperation](operationId);
+    await this[queryOperation](domainId);
     await this[queryResponses]();
     this[preselectResponse]();
     this[queryingValue] = false;
@@ -342,7 +304,7 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
    */
   [operationUpdatedHandler](e) {
     const { graphId, item } = e.detail;
-    if (graphId !== this.operationId) {
+    if (graphId !== this.domainId) {
       return;
     }
     this[operationValue] = item;
@@ -493,7 +455,7 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
       return '';
     }
     return html`
-    <amf-request-document .requestId="${operation.request}" payloadOpened headersOpened parametersOpened></amf-request-document>
+    <amf-request-document .domainId="${operation.request}" payloadOpened headersOpened parametersOpened></amf-request-document>
     `;
   }
 
@@ -542,7 +504,7 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
       return html`<div class="empty-info">Select a response to render the documentation.</div>`;
     }
     return html`
-    <amf-response-document .responseId="${response.id}" headersOpened payloadOpened></amf-response-document>
+    <amf-response-document .domainId="${response.id}" headersOpened payloadOpened></amf-response-document>
     `;
   }
 }

@@ -12,11 +12,94 @@ export const sectionToggleClickHandler = Symbol('sectionToggleClickHandler');
 export const sectionToggleTemplate = Symbol('sectionToggleTemplate');
 export const paramsSectionTemplate = Symbol('paramsSectionTemplate');
 export const schemaItemTemplate = Symbol('schemaItemTemplate');
+export const queryDebounce = Symbol('queryDebounce');
+export const debounceValue = Symbol('debounceValue');
+export const queryingValue = Symbol('queryingValue');
+export const domainIdValue = Symbol('domainIdValue');
 
 /**
  * A base class for the documentation components with common templates and functions.
  */
 export class AmfDocumentationBase extends EventsTargetMixin(LitElement) {
+  /** 
+   * @returns {boolean} When true then the element is currently querying for the graph data.
+   */
+  get querying() {
+    return this[queryingValue] || false;
+  }
+
+  /** 
+   * @returns {string|undefined} The domain id of the object to render.
+   */
+  get domainId() {
+    return this[domainIdValue];
+  }
+
+  /** 
+   * @returns {string|undefined} The domain id of the object to render.
+   */
+  set domainId(value) {
+    const old = this[domainIdValue];
+    if (old === value) {
+      return;
+    }
+    this[domainIdValue] = value;
+    this.requestUpdate('domainId', old);
+    if (value) {
+      this[queryDebounce]();
+    }
+  }
+
+  static get properties() {
+    return {
+      /** 
+       * The domain id of the object to render.
+       */
+      domainId: { type: String, reflect: true },
+    };
+  }
+
+  constructor() {
+    super();
+    /** 
+     * The timeout after which the `queryGraph()` function is called 
+     * in the debouncer.
+     */
+    this.queryDebouncerTimeout = 2;
+    /** 
+     * Flag set when the element is querying for the data.
+     */
+    this[queryingValue] = false;
+  }
+
+  connectedCallback() {
+    super.connectedCallback();
+    if (this.domainId) {
+      this[queryDebounce]();
+    }
+  }
+
+  /**
+   * Calls the `queryGraph()` function in a debouncer.
+   */
+  [queryDebounce]() {
+    if (this[debounceValue]) {
+      clearTimeout(this[debounceValue]);
+    }
+    this[debounceValue] = setTimeout(() => {
+      this[debounceValue] = undefined;
+      this.queryGraph();
+    }, this.queryDebouncerTimeout);
+  }
+
+  /**
+   * The main function to use to query the graph for the model being rendered.
+   * To be implemented by the child classes.
+   */
+  queryGraph() {
+    // ...
+  }
+
   /**
    * A handler for the section toggle button click.
    * @param {Event} e
@@ -78,7 +161,7 @@ export class AmfDocumentationBase extends EventsTargetMixin(LitElement) {
    */
   [schemaItemTemplate](id) {
     return html`
-    <amf-parameter-document .parameterId="${id}" class="property-item"></amf-parameter-document>
+    <amf-parameter-document .domainId="${id}" class="property-item"></amf-parameter-document>
     `;
   }
 }

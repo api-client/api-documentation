@@ -1,11 +1,14 @@
 /* eslint-disable class-methods-use-this */
-import { LitElement, html } from 'lit-element';
-import { EventsTargetMixin } from '@advanced-rest-client/events-target-mixin';
+import { html } from 'lit-element';
 import { StoreEvents, StoreEventTypes } from '@api-client/amf-store';
 import { TelemetryEvents, ReportingEvents } from '@api-client/graph-project';
 import commonStyles from './styles/Common.js';
 import elementStyles from './styles/ApiPayload.js';
 import '../../amf-schema-document.js';
+import { 
+  AmfDocumentationBase,
+  queryingValue,
+} from './AmfDocumentationBase.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiPayload} ApiPayload */
@@ -13,8 +16,6 @@ import '../../amf-schema-document.js';
 /** @typedef {import('@api-client/amf-store').ApiShapeUnion} ApiShapeUnion */
 /** @typedef {import('@api-client/amf-store').ApiExample} ApiExample */
 
-export const payloadIdValue = Symbol('payloadIdValue');
-export const queryingValue = Symbol('queryingValue');
 export const queryPayload = Symbol('queryPayload');
 export const queryExamples = Symbol('queryExamples');
 export const payloadValue = Symbol('payloadValue');
@@ -25,47 +26,9 @@ export const mediaTypeTemplate = Symbol('mediaTypeTemplate');
 export const nameTemplate = Symbol('nameTemplate');
 export const schemaTemplate = Symbol('schemaTemplate');
 
-export default class AmfPayloadDocumentElement extends EventsTargetMixin(LitElement) {
+export default class AmfPayloadDocumentElement extends AmfDocumentationBase {
   static get styles() {
     return [commonStyles, elementStyles];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the API payload to render.
-   */
-  get payloadId() {
-    return this[payloadIdValue];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the API payload to render.
-   */
-  set payloadId(value) {
-    const old = this[payloadIdValue];
-    if (old === value) {
-      return;
-    }
-    this[payloadIdValue] = value;
-    this.requestUpdate('payloadId', old);
-    if (value) {
-      setTimeout(() => this.queryGraph(value));
-    }
-  }
-
-  /** 
-   * @returns {boolean} When true then the element is currently querying for the graph data.
-   */
-  get querying() {
-    return this[queryingValue] || false;
-  }
-
-  static get properties() {
-    return {
-      /** 
-       * The domain id of the API payload to render.
-       */
-      payloadId: { type: String, reflect: true },
-    };
   }
 
   constructor() {
@@ -80,13 +43,6 @@ export default class AmfPayloadDocumentElement extends EventsTargetMixin(LitElem
     this[examplesValue] = undefined;
 
     this[payloadUpdatedHandler] = this[payloadUpdatedHandler].bind(this);
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.payloadId) {
-      this.queryGraph(this.payloadId);
-    }
   }
 
   /**
@@ -107,15 +63,15 @@ export default class AmfPayloadDocumentElement extends EventsTargetMixin(LitElem
 
   /**
    * Queries the graph store for the API Payload data.
-   * @param {string} payloadId The domain id of the API Payload to render.
    * @returns {Promise<void>}
    */
-  async queryGraph(payloadId) {
+  async queryGraph() {
     if (this.querying) {
       return;
     }
+    const { domainId } = this;
     this[queryingValue] = true;
-    await this[queryPayload](payloadId);
+    await this[queryPayload](domainId);
     await this[processPayload]();
     this[queryingValue] = false;
     await this.requestUpdate();
@@ -168,7 +124,7 @@ export default class AmfPayloadDocumentElement extends EventsTargetMixin(LitElem
    */
   async [payloadUpdatedHandler](e) {
     const { graphId, item } = e.detail;
-    if (graphId !== this.payloadId) {
+    if (graphId !== this.domainId) {
       return;
     }
     this[payloadValue] = item;
@@ -230,7 +186,7 @@ export default class AmfPayloadDocumentElement extends EventsTargetMixin(LitElem
       return html`<div class="empty-info">Schema is not defined for this payload.</div>`;
     }
     return html`
-    <amf-schema-document .schemaId="${schema}" .mimeType="${mediaType}" forceExamples></amf-schema-document>
+    <amf-schema-document .domainId="${schema}" .mimeType="${mediaType}" forceExamples></amf-schema-document>
     `;
   }
 }

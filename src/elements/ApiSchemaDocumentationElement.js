@@ -7,17 +7,16 @@ import markdownStyles from '@advanced-rest-client/markdown-styles/markdown-style
 import '@advanced-rest-client/arc-marked/arc-marked.js';
 import elementStyles from './styles/ApiSchemaDocumentation.js';
 import commonStyles from './styles/Common.js';
-import '../../amf-request-document.js'
-import '../../amf-response-document.js'
-import { AmfDocumentationBase } from './AmfDocumentationBase.js';
 import '../../amf-schema-document.js';
+import { 
+  AmfDocumentationBase,
+  queryingValue,
+} from './AmfDocumentationBase.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiShapeUnion} ApiShapeUnion */
 /** @typedef {import('@api-client/amf-store').ApiStoreStateUpdateEvent} ApiStoreStateUpdateEvent */
 
-export const schemaIdValue = Symbol('schemaIdValue');
-export const queryingValue = Symbol('queryingValue');
 export const schemaValue = Symbol('schemaValue');
 export const titleTemplate = Symbol('titleTemplate');
 export const schemaTemplate = Symbol('schemaTemplate');
@@ -32,44 +31,6 @@ export default class ApiSchemaDocumentationElement extends AmfDocumentationBase 
     return [elementStyles, commonStyles, HttpStyles.default, markdownStyles];
   }
 
-  /** 
-   * @returns {string|undefined} The domain id of the schema to render.
-   */
-  get schemaId() {
-    return this[schemaIdValue];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the schema to render.
-   */
-  set schemaId(value) {
-    const old = this[schemaIdValue];
-    if (old === value) {
-      return;
-    }
-    this[schemaIdValue] = value;
-    this.requestUpdate('schemaId', old);
-    if (value) {
-      setTimeout(() => this.queryGraph(value));
-    }
-  }
-
-  /** 
-   * @returns {boolean} When true then the element is currently querying for the graph data.
-   */
-  get querying() {
-    return this[queryingValue] || false;
-  }
-
-  static get properties() {
-    return {
-      /** 
-       * The domain id of the schema to render.
-       */
-      schemaId: { type: String, reflect: true },
-    };
-  }
-
   constructor() {
     super();
     /**
@@ -77,13 +38,6 @@ export default class ApiSchemaDocumentationElement extends AmfDocumentationBase 
      */
     this[schemaValue] = undefined;
     this[schemaUpdatedHandler] = this[schemaUpdatedHandler].bind(this);
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.schemaId) {
-      this.queryGraph(this.schemaId);
-    }
   }
 
   /**
@@ -104,14 +58,14 @@ export default class ApiSchemaDocumentationElement extends AmfDocumentationBase 
 
   /**
    * Queries the graph store for the API schema data.
-   * @param {string} schemaId The domain id
    * @returns {Promise<void>}
    */
-  async queryGraph(schemaId) {
+  async queryGraph() {
     if (this.querying) {
       return;
     }
-    if (!schemaId) {
+    const { domainId } = this;
+    if (!domainId) {
       this[schemaValue] = undefined;
       this.requestUpdate();
       return;
@@ -119,7 +73,7 @@ export default class ApiSchemaDocumentationElement extends AmfDocumentationBase 
     this[queryingValue] = true;
     this.requestUpdate();
     try {
-      const info = await StoreEvents.Type.get(this, schemaId);
+      const info = await StoreEvents.Type.get(this, domainId);
       // console.log(info);
       this[schemaValue] = info;
     } catch (e) {
@@ -136,8 +90,8 @@ export default class ApiSchemaDocumentationElement extends AmfDocumentationBase 
    */
   [schemaUpdatedHandler](e) {
     const { graphId, item } = e.detail;
-    const { schemaId } = this;
-    if (!schemaId || schemaId !== graphId) {
+    const { domainId } = this;
+    if (!domainId || domainId !== graphId) {
       return;
     }
     this[schemaValue] = item;
@@ -180,7 +134,7 @@ export default class ApiSchemaDocumentationElement extends AmfDocumentationBase 
     }
     // .mimeType="${mediaType}"
     return html`
-    <amf-schema-document .schemaId="${type.id}" forceExamples hideTitle></amf-schema-document>
+    <amf-schema-document .domainId="${type.id}" forceExamples hideTitle></amf-schema-document>
     `;
   }
 }
