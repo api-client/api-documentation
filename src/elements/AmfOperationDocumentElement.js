@@ -52,6 +52,7 @@ export const serverCreatedHandler = Symbol('serverCreatedHandler');
 export const serverUpdatedHandler = Symbol('serverUpdatedHandler');
 export const serverDeletedHandler = Symbol('serverDeletedHandler');
 export const statusCodeHandler = Symbol('statusCodeHandler');
+export const securitySectionTemplate = Symbol('securitySectionTemplate');
 
 /**
  * A web component that renders the documentation page for an API operation built from 
@@ -87,6 +88,10 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
        */
       responsesOpened: { type: Boolean, reflect: true },
       /** 
+       * When set it opens the security section
+       */
+      securityOpened: { type: Boolean, reflect: true },
+      /** 
        * The selected status code in the responses section.
        */
       selectedStatus: { type: String },
@@ -121,6 +126,7 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
     this.selectedStatus = undefined;
 
     this.responsesOpened = false;
+    this.securityOpened = false;
 
     this[operationUpdatedHandler] = this[operationUpdatedHandler].bind(this);
     this[endpointUpdatedHandler] = this[endpointUpdatedHandler].bind(this);
@@ -393,6 +399,7 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
     ${this[urlTemplate]()}
     ${this[requestTemplate]()}
     ${this[responseTemplate]()}
+    ${this[securitySectionTemplate]()}
     `;
   }
 
@@ -506,5 +513,16 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
     return html`
     <amf-response-document .domainId="${response.id}" headersOpened payloadOpened></amf-response-document>
     `;
+  }
+
+  /**
+   * @returns {TemplateResult|string} The template for the security list section.
+   */
+  [securitySectionTemplate]() {
+    const operation = this[operationValue];
+    if (!operation || !Array.isArray(operation.security) || !operation.security.length) {
+      return '';
+    }
+    return this[paramsSectionTemplate]('Security', 'securityOpened', 'content');
   }
 }
