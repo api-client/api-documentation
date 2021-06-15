@@ -1,5 +1,6 @@
 /* eslint-disable class-methods-use-this */
 import { html } from 'lit-element';
+import { classMap } from 'lit-html/directives/class-map.js';
 import { StoreEvents, StoreEventTypes } from '@api-client/amf-store/worker.index.js';
 import { Styles as HttpStyles } from '@api-components/http-method-label';
 import { TelemetryEvents, ReportingEvents } from '@api-client/graph-project';
@@ -7,6 +8,7 @@ import { MarkdownStyles } from '@advanced-rest-client/highlight';
 import '@advanced-rest-client/highlight/arc-marked.js';
 import '@anypoint-web-components/anypoint-tabs/anypoint-tab.js';
 import '@anypoint-web-components/anypoint-tabs/anypoint-tabs.js';
+import '@advanced-rest-client/arc-icons/arc-icon.js';
 import elementStyles from './styles/ApiOperation.js';
 import commonStyles from './styles/Common.js';
 import '../../amf-request-document.js';
@@ -54,6 +56,7 @@ export const serverUpdatedHandler = Symbol('serverUpdatedHandler');
 export const serverDeletedHandler = Symbol('serverDeletedHandler');
 export const statusCodeHandler = Symbol('statusCodeHandler');
 export const securitySectionTemplate = Symbol('securitySectionTemplate');
+export const deprecatedTemplate = Symbol('deprecatedTemplate');
 
 /**
  * A web component that renders the documentation page for an API operation built from 
@@ -396,6 +399,7 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
     }
     return html`
     ${this[titleTemplate]()}
+    ${this[deprecatedTemplate]()}
     ${this[descriptionTemplate]()}
     ${this[urlTemplate]()}
     ${this[requestTemplate]()}
@@ -409,14 +413,37 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
    */
   [titleTemplate]() {
     const operation = this[operationValue];
-    const { name, method } = operation;
+    const { name, method, deprecated } = operation;
     const label = name || method;
+    const labelClasses = {
+      label: true,
+      deprecated,
+    };
     return html`
     <div class="operation-header">
       <div class="operation-title">
-        <span class="label">${label}</span>
+        <span class="${classMap(labelClasses)}">${label}</span>
       </div>
       <p class="sub-header">API operation</p>
+    </div>
+    `;
+  }
+
+  /**
+   * @returns {TemplateResult|string} The template for the deprecated message.
+   */
+  [deprecatedTemplate]() {
+    const operation = this[operationValue];
+    const { deprecated } = operation;
+    if (!deprecated) {
+      return '';
+    }
+    return html`
+    <div class="deprecated-message">
+      <arc-icon icon="warning"></arc-icon>
+      <span class="message">
+      This operation is marked as deprecated.
+      </span>
     </div>
     `;
   }

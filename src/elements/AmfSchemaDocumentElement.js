@@ -604,7 +604,7 @@ export default class AmfSchemaDocumentElement extends AmfDocumentationBase {
    */
   [shapePropertyTemplate](schema) {
     const { range, minCount } = schema;
-    const { displayName } = range;
+    const { displayName, deprecated } = range;
     const required = minCount > 0;
     const type = readPropertyTypeLabel(range);
     const label = schema.name || displayName || range.name;
@@ -624,7 +624,7 @@ export default class AmfSchemaDocumentElement extends AmfDocumentationBase {
     return html`
     <div class="property-container">
       <div class="name-column">
-        ${paramNameTemplate(label, required)}
+        ${paramNameTemplate(label, required, deprecated)}
         ${typeValueTemplate(type)}
         ${isComplex ? html`<anypoint-button data-id="${schema.id}" @click="${this[expandHandler]}">${buttonLabel}</anypoint-button>` : ''}
       </div>

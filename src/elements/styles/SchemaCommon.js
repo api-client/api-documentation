@@ -22,6 +22,10 @@ export default css`
     word-break: break-all;
   }
 
+  .param-name.deprecated {
+    text-decoration: line-through;
+  }
+
   .param-type {
     margin: 12px 0;
   }
@@ -90,6 +94,10 @@ export default css`
     white-space: pre-wrap;
   }
 
+  .code-value.inline {
+    padding: 0 4px;
+  }
+
   .code-value,
   .code-value code {
     font-family: var(--code-font-family);
@@ -129,5 +137,31 @@ export default css`
 
   .shape-children {
     margin-left: 20px;
+  }
+
+  .pill {
+    padding: 2px 12px;
+    background-color: var(--pill-background-color, #e5e5e5);
+    color: var(--pill-color, var(--primary-text-color, #000));
+    border-radius: 12px;
+    margin: 4px;
+  }
+
+  .pill.warning {
+    background-color: var(--pill-warning-background-color, #ffc107);
+    color: var(--pill-warning-color, var(--primary-text-color, #000));
+  }
+
+  .pill:first-child {
+    margin-left: 0;
+  }
+
+  .pill:last-child {
+    margin-right: 0;
+  }
+
+  .param-pills {
+    display: flex;
+    align-items: center;
   }
 `;

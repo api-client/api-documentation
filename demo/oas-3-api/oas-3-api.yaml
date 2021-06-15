@@ -71,6 +71,11 @@ components:
           description: The title of the article, in CommonMark format.
           type: string
           minLength: 3
+        outdated:
+          description: This is no longer in use.
+          type: string
+          deprecated: true
+          writeOnly: true
   parameters:
     skipParam:
       name: skip
@@ -199,3 +204,11 @@ paths:
                     properties:
                       description:
                         type: string
+  /outdatedEndpoint:
+    description: This endpoint is no longer in use.
+    get:
+      deprecated: true
+      description: This operation is no longer in use.
+      responses:
+        '200':
+          description: Successful response
