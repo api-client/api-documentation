@@ -1,5 +1,5 @@
 /* eslint-disable class-methods-use-this */
-import { ns } from '@api-components/amf-helper-mixin/src/Namespace';
+import { ns } from '@api-client/amf-store';
 import { 
   ShapeExampleGeneratorBase,
   scalarShapeObject,

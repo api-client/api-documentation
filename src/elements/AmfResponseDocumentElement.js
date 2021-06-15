@@ -1,9 +1,9 @@
 /* eslint-disable class-methods-use-this */
 import { html } from 'lit-element';
-import { StoreEvents, StoreEventTypes } from '@api-client/amf-store';
+import { StoreEvents, StoreEventTypes } from '@api-client/amf-store/worker.index.js';
 import { TelemetryEvents, ReportingEvents } from '@api-client/graph-project';
-import markdownStyles from '@advanced-rest-client/markdown-styles/markdown-styles.js';
-import '@advanced-rest-client/arc-marked/arc-marked.js';
+import { MarkdownStyles } from '@advanced-rest-client/highlight';
+import '@advanced-rest-client/highlight/arc-marked.js';
 import '@anypoint-web-components/anypoint-button/anypoint-button.js';
 import '@anypoint-web-components/anypoint-collapse/anypoint-collapse.js';
 import '@advanced-rest-client/arc-icons/arc-icon.js';
@@ -48,7 +48,7 @@ export const mediaTypeSelectHandler = Symbol('mediaTypeSelectHandler');
  */
 export default class AmfResponseDocumentElement extends AmfDocumentationBase {
   static get styles() {
-    return [commonStyles, elementStyles, markdownStyles];
+    return [commonStyles, elementStyles, MarkdownStyles];
   }
 
   /**

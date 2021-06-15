@@ -1,12 +1,11 @@
 /* eslint-disable class-methods-use-this */
 import { html } from 'lit-element';
-import { StoreEvents, StoreEventTypes } from '@api-client/amf-store';
+import { StoreEvents, StoreEventTypes, ns } from '@api-client/amf-store/worker.index.js';
 import { TelemetryEvents, ReportingEvents } from '@api-client/graph-project';
-import markdownStyles from '@advanced-rest-client/markdown-styles/markdown-styles.js';
-import '@advanced-rest-client/arc-marked/arc-marked.js';
+import { MarkdownStyles } from '@advanced-rest-client/highlight';
+import '@advanced-rest-client/highlight/arc-marked.js';
 import '@anypoint-web-components/anypoint-radio-button/anypoint-radio-button.js';
 import '@anypoint-web-components/anypoint-radio-button/anypoint-radio-group.js';
-import { ns } from '@api-components/amf-helper-mixin/src/Namespace';
 import commonStyles from './styles/Common.js';
 import elementStyles from './styles/ApiSchema.js';
 import schemaStyles from './styles/SchemaCommon.js';
@@ -80,7 +79,7 @@ const complexTypes = [
 
 export default class AmfSchemaDocumentElement extends AmfDocumentationBase {
   static get styles() {
-    return [commonStyles, schemaStyles, elementStyles, markdownStyles];
+    return [commonStyles, schemaStyles, elementStyles, MarkdownStyles];
   }
 
   get mimeType() {

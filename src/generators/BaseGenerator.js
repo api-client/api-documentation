@@ -1,4 +1,4 @@
-import { ns } from '@api-components/amf-helper-mixin/src/Namespace';
+import { ns } from '@api-client/amf-store';
 
 /** @typedef {import('@api-client/amf-store').ApiObjectNode} ApiObjectNode */
 /** @typedef {import('@api-client/amf-store').ApiArrayNode} ApiArrayNode */

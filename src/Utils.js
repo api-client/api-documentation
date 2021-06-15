@@ -1,4 +1,4 @@
-import { ns } from '@api-components/amf-helper-mixin/src/Namespace.js';
+import { ns } from '@api-client/amf-store';
 
 /** @typedef {import('@api-client/amf-store').ApiShapeUnion} ApiShapeUnion */
 /** @typedef {import('@api-client/amf-store').ApiScalarShape} ApiScalarShape */

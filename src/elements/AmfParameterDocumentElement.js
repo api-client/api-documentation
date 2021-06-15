@@ -1,9 +1,9 @@
 /* eslint-disable class-methods-use-this */
 import { html } from 'lit-element';
-import { StoreEvents, StoreEventTypes } from '@api-client/amf-store';
+import { StoreEvents, StoreEventTypes } from '@api-client/amf-store/worker.index.js';
 import { TelemetryEvents, ReportingEvents } from '@api-client/graph-project';
-import markdownStyles from '@advanced-rest-client/markdown-styles/markdown-styles.js';
-import '@advanced-rest-client/arc-marked/arc-marked.js';
+import { MarkdownStyles } from '@advanced-rest-client/highlight';
+import '@advanced-rest-client/highlight/arc-marked.js';
 import commonStyles from './styles/Common.js';
 import elementStyles from './styles/ApiParameter.js';
 import schemaStyles from './styles/SchemaCommon.js';
@@ -36,7 +36,7 @@ export const schemaUpdatedHandler = Symbol('schemaUpdatedHandler');
  */
 export default class AmfParameterDocumentElement extends AmfDocumentationBase {
   static get styles() {
-    return [markdownStyles, commonStyles, schemaStyles, elementStyles];
+    return [MarkdownStyles, commonStyles, schemaStyles, elementStyles];
   }
 
   constructor() {

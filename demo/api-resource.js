@@ -43,7 +43,7 @@ class ComponentPage extends DemoPage {
 
   async autoLoad() {
     await this.initStore();
-    await this.loadDemoApi('demo-api-compact.json');
+    await this.loadDemoApi('demo-api.json');
   }
 
   async firstRender() {
@@ -214,10 +214,10 @@ class ComponentPage extends DemoPage {
       <h4>Initialization</h4>
       <div @click="${this.actionHandler}">
         <button id="init">Init</button>
-        <button id="loadApiGraph" data-src="demo-api-compact.json" ?disabled="${!initialized}">Load demo API</button>
-        <button id="loadApiGraph" data-src="async-api-compact.json" ?disabled="${!initialized}">Load async API</button>
+        <button id="loadApiGraph" data-src="demo-api.json" ?disabled="${!initialized}">Load demo API</button>
+        <button id="loadApiGraph" data-src="async-api.json" ?disabled="${!initialized}">Load async API</button>
         <button id="loadApiGraph" data-src="google-drive-api.json" ?disabled="${!initialized}">Load Google Drive API</button>
-        <button id="loadApiGraph" data-src="streetlights-compact.json" ?disabled="${!initialized}">Streetlights (async) API</button>
+        <button id="loadApiGraph" data-src="streetlights.json" ?disabled="${!initialized}">Streetlights (async) API</button>
         <button id="loadApiGraph" data-src="oas-3-api.json" ?disabled="${!initialized}">OAS 3</button>
         <button id="loadApiGraph" data-src="petstore.json" ?disabled="${!initialized}">Pet store (OAS 3)</button>
         <button id="createWebApi" ?disabled="${!initialized}">Create empty Web API</button>

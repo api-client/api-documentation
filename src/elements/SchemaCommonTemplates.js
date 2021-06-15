@@ -1,5 +1,5 @@
 import { html } from "lit-element";
-import { ns } from '@api-components/amf-helper-mixin/src/Namespace.js';
+import { ns } from '@api-client/amf-store';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiShapeUnion} ApiShapeUnion */
