@@ -116,7 +116,7 @@ export default class AmfSecurityDocumentElement extends AmfDocumentationBase {
   }
 
   /**
-   * Queries the graph store for the API schema data.
+   * Queries the graph store for the API security data.
    * @returns {Promise<void>}
    */
   async queryGraph() {

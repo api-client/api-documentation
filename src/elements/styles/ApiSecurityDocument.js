@@ -16,14 +16,14 @@ export default css`
 }
 
 .security-title .label {
-  font-size: var(--operation-title-size, 26px);
-  font-weight: var(--operation-title-weight, 400);
+  font-size: var(--security-title-size, 26px);
+  font-weight: var(--security-title-weight, 400);
   margin: 8px 0px;
 }
 
 .sub-header {
   font-size: 0.95rem;
-  color: var(--operation-subheader-color, #616161);
+  color: var(--security-subheader-color, #616161);
   margin: 0;
 }
 

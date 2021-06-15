@@ -9,8 +9,9 @@ import '@anypoint-web-components/anypoint-tabs/anypoint-tab.js';
 import '@anypoint-web-components/anypoint-tabs/anypoint-tabs.js';
 import elementStyles from './styles/ApiOperation.js';
 import commonStyles from './styles/Common.js';
-import '../../amf-request-document.js'
-import '../../amf-response-document.js'
+import '../../amf-request-document.js';
+import '../../amf-response-document.js';
+import '../../amf-security-requirement-document.js';
 import { 
   AmfDocumentationBase, 
   paramsSectionTemplate,
@@ -523,6 +524,7 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
     if (!operation || !Array.isArray(operation.security) || !operation.security.length) {
       return '';
     }
-    return this[paramsSectionTemplate]('Security', 'securityOpened', 'content');
+    const content = operation.security.map((id) => html`<amf-security-requirement-document .domainId="${id}"></amf-security-requirement-document>`);
+    return this[paramsSectionTemplate]('Security', 'securityOpened', content);
   }
 }

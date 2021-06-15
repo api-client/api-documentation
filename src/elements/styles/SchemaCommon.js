@@ -83,8 +83,8 @@ export default css`
   }
 
   .code-value {
-    margin: 0 4px;
-    padding: 0 4px;
+    margin: 0px 4px;
+    padding: 2px 4px;
     background-color: var(--code-background-color);
     word-break: break-all;
     white-space: pre-wrap;
