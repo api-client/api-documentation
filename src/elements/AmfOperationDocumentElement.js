@@ -19,6 +19,10 @@ import {
   paramsSectionTemplate,
   queryingValue,
 } from './AmfDocumentationBase.js';
+import { 
+  tablePropertyTemplate,
+} from './SchemaCommonTemplates.js';
+import schemaStyles from './styles/SchemaCommon.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiEndPoint} ApiEndPoint */
@@ -57,6 +61,7 @@ export const serverDeletedHandler = Symbol('serverDeletedHandler');
 export const statusCodeHandler = Symbol('statusCodeHandler');
 export const securitySectionTemplate = Symbol('securitySectionTemplate');
 export const deprecatedTemplate = Symbol('deprecatedTemplate');
+export const metaDataTemplate = Symbol('metaDataTemplate');
 
 /**
  * A web component that renders the documentation page for an API operation built from 
@@ -64,7 +69,7 @@ export const deprecatedTemplate = Symbol('deprecatedTemplate');
  */
 export default class AmfOperationDocumentElement extends AmfDocumentationBase {
   static get styles() {
-    return [elementStyles, commonStyles, HttpStyles.default, MarkdownStyles];
+    return [elementStyles, commonStyles, HttpStyles.default, MarkdownStyles, schemaStyles];
   }
 
   get serverId() {
@@ -401,6 +406,7 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
     ${this[titleTemplate]()}
     ${this[deprecatedTemplate]()}
     ${this[descriptionTemplate]()}
+    ${this[metaDataTemplate]()}
     ${this[urlTemplate]()}
     ${this[requestTemplate]()}
     ${this[responseTemplate]()}
@@ -413,8 +419,8 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
    */
   [titleTemplate]() {
     const operation = this[operationValue];
-    const { name, method, deprecated } = operation;
-    const label = name || method;
+    const { name, method, deprecated, summary } = operation;
+    const label = summary || name || method;
     const labelClasses = {
       label: true,
       deprecated,
@@ -427,6 +433,23 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
       <p class="sub-header">API operation</p>
     </div>
     `;
+  }
+
+  /**
+   * @returns {TemplateResult|string} The template for the Operation meta information.
+   */
+  [metaDataTemplate]() {
+    const operation = this[operationValue];
+    const { operationId, } = operation;
+    const result = [];
+    if (operationId) {
+      result.push(tablePropertyTemplate('Operation ID', operationId));
+    }
+
+    if (result.length) {
+      return result;
+    }
+    return '';
   }
 
   /**

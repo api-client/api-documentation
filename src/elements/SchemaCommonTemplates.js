@@ -116,7 +116,7 @@ export function descriptionValueTemplate(description) {
  * @param {string} value
  * @return {TemplateResult}
  */
-function tablePropertyTemplate(label, value) {
+export function tablePropertyTemplate(label, value) {
   return html`
   <div class="schema-property-item">
     <div class="schema-property-label">${label}:</div>
@@ -126,7 +126,7 @@ function tablePropertyTemplate(label, value) {
 }
 
 
-function detailSectionTemplate(items) {
+export function detailSectionTemplate(items) {
   return html`
   <details class="property-details">
     <summary><span class="label">Details</span></summary>
