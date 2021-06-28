@@ -132,9 +132,10 @@ export default class ApiSchemaDocumentationElement extends AmfDocumentationBase 
     if (!type) {
       return '';
     }
+    const { edit } = this;
     // .mimeType="${mediaType}"
     return html`
-    <amf-schema-document .domainId="${type.id}" forceExamples hideTitle></amf-schema-document>
+    <amf-schema-document .domainId="${type.id}" forceExamples hideTitle .edit="${edit}" .editProperties="${edit}"></amf-schema-document>
     `;
   }
 }

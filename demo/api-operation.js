@@ -21,10 +21,11 @@ class ComponentPage extends DemoPage {
     this.initObservableProperties([
       'loaded', 'initialized',
       'selectedId', 'selectedType',
-      'apiId',
+      'apiId', 'edit'
     ]);
     this.loaded = false;
     this.initialized = false;
+    this.edit = false;
     this.renderViewControls = true;
     this.selectedId = undefined;
     this.selectedType = undefined;
@@ -167,7 +168,7 @@ class ComponentPage extends DemoPage {
   }
 
   _componentTemplate() {
-    const { demoStates, darkThemeActive, selectedId } = this;
+    const { demoStates, darkThemeActive, selectedId, edit } = this;
     if (!selectedId) {
       return html`<p>Select API operation in the navigation</p>`;
     }
@@ -180,6 +181,7 @@ class ComponentPage extends DemoPage {
       <amf-operation-document
         .domainId="${selectedId}"
         slot="content"
+        ?edit="${edit}"
       >
       </amf-operation-document>
 

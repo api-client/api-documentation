@@ -691,3 +691,51 @@ securitySchemes:
     body: 
       application/json:
         type: [DemoTypes.Mamal, DemoTypes.Pet | DemoTypes.Cat]
+/editing-empty-descriptions/{id}:
+  uriParameters: 
+    id: 
+      type: number
+      example: 1
+  get:
+    queryParameters: 
+      name:
+        type: string
+    headers: 
+      other:
+        type: date-only
+    responses: 
+      200:
+        headers: 
+          ETag: string
+        body: 
+          application/json:
+            displayName: A response
+            type: object
+            properties: 
+              prop1: string
+              prop2: number
+  post:
+    queryParameters: 
+      name:
+        type: string
+    headers: 
+      other:
+        type: date-only
+    body: 
+      application/json:
+        type: object
+        displayName: A request
+        properties: 
+          prop1: string
+          prop2: number
+    responses: 
+      200:
+        headers: 
+          ETag: string
+        body: 
+          application/json:
+            displayName: A response
+            type: object
+            properties: 
+              prop1: string
+              prop2: number

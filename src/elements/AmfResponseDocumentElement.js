@@ -20,6 +20,7 @@ import {
   schemaItemTemplate,
   queryingValue,
 } from './AmfDocumentationBase.js';
+import { DescriptionEditMixin, updateDescription, descriptionTemplate } from './mixins/DescriptionEditMixin.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiResponse} ApiResponse */
@@ -34,7 +35,6 @@ export const responseValue = Symbol('responseValue');
 export const queryPayloads = Symbol('queryPayloads');
 export const payloadsValue = Symbol('payloadsValue');
 export const payloadValue = Symbol('payloadValue');
-export const descriptionTemplate = Symbol('descriptionTemplate');
 export const headersTemplate = Symbol('headersTemplate');
 export const payloadTemplate = Symbol('payloadTemplate');
 export const payloadSelectorTemplate = Symbol('payloadSelectorTemplate');
@@ -46,7 +46,7 @@ export const mediaTypeSelectHandler = Symbol('mediaTypeSelectHandler');
 /**
  * A web component that renders the documentation page for an API response object.
  */
-export default class AmfResponseDocumentElement extends AmfDocumentationBase {
+export default class AmfResponseDocumentElement extends DescriptionEditMixin(AmfDocumentationBase) {
   static get styles() {
     return [commonStyles, elementStyles, MarkdownStyles];
   }
@@ -238,32 +238,24 @@ export default class AmfResponseDocumentElement extends AmfDocumentationBase {
     this.mimeType = mime;
   }
 
+  /**
+   * Updates the description of the response.
+   * @param {string} markdown The new markdown to set.
+   * @return {Promise<void>} 
+   */
+  async [updateDescription](markdown) {
+    await StoreEvents.Response.update(this, this.domainId, 'description', markdown);
+    this[responseValue].description = markdown;
+  }
+
   render() {
     if (!this[responseValue]) {
       return html``;
     }
     return html`
-    ${this[descriptionTemplate]()}
+    ${this[descriptionTemplate](this[responseValue].description)}
     ${this[headersTemplate]()}
     ${this[payloadTemplate]()}
-    `;
-  }
-
-  /**
-   * @returns {TemplateResult|string} The template for the markdown description.
-   */
-  [descriptionTemplate]() {
-    const response = this[responseValue];
-    const { description } = response;
-    if (!description) {
-      return '';
-    }
-    return html`
-    <div class="api-description">
-      <arc-marked .markdown="${description}" sanitize>
-        <div slot="markdown-html" class="markdown-body"></div>
-      </arc-marked>
-    </div>
     `;
   }
 
@@ -289,7 +281,7 @@ export default class AmfResponseDocumentElement extends AmfDocumentationBase {
     }
     const content = html`
     ${this[payloadSelectorTemplate]()}
-    <amf-payload-document .domainId="${payload.id}"></amf-payload-document>
+    <amf-payload-document .domainId="${payload.id}" .edit="${this.edit}"></amf-payload-document>
     `;
     return this[paramsSectionTemplate]('Response body', 'payloadOpened', content);
   }

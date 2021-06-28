@@ -325,7 +325,7 @@ export default class AmfRequestDocumentElement extends AmfDocumentationBase {
     }
     const content = html`
     ${this[payloadSelectorTemplate]()}
-    <amf-payload-document .domainId="${payload.id}"></amf-payload-document>
+    <amf-payload-document .domainId="${payload.id}" .edit="${this.edit}"></amf-payload-document>
     `;
     return this[paramsSectionTemplate]('Request body', 'payloadOpened', content);
   }

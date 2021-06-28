@@ -56,6 +56,14 @@ export class AmfDocumentationBase extends EventsTargetMixin(LitElement) {
        * The domain id of the object to render.
        */
       domainId: { type: String, reflect: true },
+      /** 
+       * Enabled compatibility with the Anypoint platform.
+       */
+      anypoint: { type: Boolean, reflect: true },
+      /** 
+       * When set it enables API editing features.
+       */
+      edit: { type: Boolean, reflect: true },
     };
   }
 
@@ -66,6 +74,10 @@ export class AmfDocumentationBase extends EventsTargetMixin(LitElement) {
      * in the debouncer.
      */
     this.queryDebouncerTimeout = 2;
+    /** @type {boolean} */
+    this.edit = undefined;
+    /** @type {boolean} */
+    this.anypoint = undefined;
     /** 
      * Flag set when the element is querying for the data.
      */
@@ -161,7 +173,7 @@ export class AmfDocumentationBase extends EventsTargetMixin(LitElement) {
    */
   [schemaItemTemplate](id) {
     return html`
-    <amf-parameter-document .domainId="${id}" class="property-item"></amf-parameter-document>
+    <amf-parameter-document .domainId="${id}" class="property-item" .edit="${this.edit}"></amf-parameter-document>
     `;
   }
 }

@@ -6,10 +6,10 @@ import '@anypoint-web-components/anypoint-dropdown-menu/anypoint-dropdown-menu.j
 import '@anypoint-web-components/anypoint-listbox/anypoint-listbox.js';
 import '@anypoint-web-components/anypoint-item/anypoint-item.js';
 import '@anypoint-web-components/anypoint-checkbox/anypoint-checkbox.js';
-import { AmfStoreService } from '@api-client/amf-store';
 import { NavigationEventTypes, NavigationEditCommands, NavigationContextMenu, ReportingEventTypes } from '@api-client/graph-project';
 import '@api-client/graph-project/graph-api-navigation.js';
 import '../amf-resource-document.js';
+import { IdbAmfStoreService } from './lib/IdbAmfStoreService.js';
 
 /** @typedef {import('@api-client/graph-project').APIGraphNavigationEvent} APIGraphNavigationEvent */
 /** @typedef {import('@api-client/graph-project').APIExternalNavigationEvent} APIExternalNavigationEvent */
@@ -21,18 +21,17 @@ class ComponentPage extends DemoPage {
     this.initObservableProperties([
       'loaded', 'initialized',
       'selectedId', 'selectedType', 'selectedOperation',
-      'apiId',
+      'apiId', 'edit',
     ]);
     this.loaded = false;
     this.initialized = false;
+    this.edit = true;
     this.renderViewControls = true;
     this.selectedId = undefined;
     this.selectedType = undefined;
     this.selectedOperation = undefined;
     this.apiId = undefined;
-    this.store = new AmfStoreService(window, {
-      amfLocation: '/node_modules/@api-client/amf-store/amf-bundle.js',
-    });
+    this.store = new IdbAmfStoreService();
     this.componentName = 'amf-endpoint-document';
     this.actionHandler = this.actionHandler.bind(this);
     window.addEventListener(NavigationEventTypes.navigate, this.navigationHandler.bind(this));
@@ -42,12 +41,19 @@ class ComponentPage extends DemoPage {
   }
 
   async autoLoad() {
-    await this.initStore();
-    await this.loadDemoApi('demo-api.json');
+    const restored = await this.store.restoreState();
+    if (!restored) {
+      await this.loadDemoApi('demo-api.json');
+    } else {
+      const api = await this.store.getApi();
+      this.apiId = api.id;
+      this.loaded = true;
+    }
+    this.initialized = true;
   }
 
-  async firstRender() {
-    await super.firstRender();
+  firstRender() {
+    super.firstRender();
     const element = document.body.querySelector('graph-api-navigation');
     if (element) {
       this.contextMenu = new NavigationContextMenu(element);
@@ -175,7 +181,7 @@ class ComponentPage extends DemoPage {
   }
 
   _componentTemplate() {
-    const { demoStates, darkThemeActive, selectedId, selectedOperation } = this;
+    const { demoStates, darkThemeActive, selectedId, selectedOperation, edit } = this;
     if (!selectedId) {
       return html`<p>Select API operation in the navigation</p>`;
     }
@@ -188,6 +194,7 @@ class ComponentPage extends DemoPage {
       <amf-resource-document
         .domainId="${selectedId}"
         .operationId="${selectedOperation}"
+        ?edit="${edit}"
         slot="content"
       >
       </amf-resource-document>
@@ -197,6 +204,7 @@ class ComponentPage extends DemoPage {
         aria-describedby="mainOptionsLabel"
         slot="options"
         name="edit"
+        .checked="${edit}"
         @change="${this._toggleMainOption}"
       >
         Edit graph

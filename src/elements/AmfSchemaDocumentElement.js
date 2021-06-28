@@ -1,3 +1,4 @@
+/* eslint-disable no-plusplus */
 /* eslint-disable class-methods-use-this */
 import { html } from 'lit-element';
 import { StoreEvents, StoreEventTypes, ns } from '@api-client/amf-store/worker.index.js';
@@ -11,7 +12,6 @@ import elementStyles from './styles/ApiSchema.js';
 import schemaStyles from './styles/SchemaCommon.js';
 import { readPropertyTypeLabel } from '../Utils.js';
 import { 
-  descriptionValueTemplate, 
   detailsTemplate, 
   paramNameTemplate, 
   typeValueTemplate, 
@@ -25,9 +25,19 @@ import {
   AmfDocumentationBase,
   queryingValue,
 } from './AmfDocumentationBase.js';
+import { 
+  DescriptionEditMixin, 
+  updateDescription, 
+  descriptionTemplate,
+  descriptionFocusHandler,
+  descriptionEditorTemplate,
+  descriptionEditor,
+  focusMarkdownEditor,
+} from './mixins/DescriptionEditMixin.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiStoreStateUpdateEvent} ApiStoreStateUpdateEvent */
+/** @typedef {import('@api-client/amf-store').ApiStoreStateCreateEvent} ApiStoreStateCreateEvent */
 /** @typedef {import('@api-client/amf-store').ApiShapeUnion} ApiShapeUnion */
 /** @typedef {import('@api-client/amf-store').ApiExample} ApiExample */
 /** @typedef {import('@api-client/amf-store').ApiScalarShape} ApiScalarShape */
@@ -40,6 +50,7 @@ import {
 /** @typedef {import('@api-client/amf-store').ApiTupleShape} ApiTupleShape */
 /** @typedef {import('@api-client/amf-store').ApiPropertyShape} ApiPropertyShape */
 /** @typedef {import('../types').SchemaExample} SchemaExample */
+/** @typedef {import('./mixins/DescriptionEditMixin').DescriptionTemplateOptions} DescriptionTemplateOptions */
 
 export const mimeTypeValue = Symbol('mimeTypeValue');
 export const querySchema = Symbol('querySchema');
@@ -54,7 +65,6 @@ export const titleTemplate = Symbol('titleTemplate');
 export const schemaUpdatedHandler = Symbol('schemaUpdatedHandler');
 export const expandHandler = Symbol('expandHandler');
 export const anyOfSelectedHandler = Symbol('anyOfSelectedHandler');
-export const descriptionTemplate = Symbol('descriptionTemplate');
 export const schemaContentTemplate = Symbol('schemaContentTemplate');
 export const scalarShapeTemplate = Symbol('scalarSchemaTemplate');
 export const nodeShapeTemplate = Symbol('nodeSchemaTemplate');
@@ -65,10 +75,17 @@ export const arrayShapeTemplate = Symbol('arrayShapeTemplate');
 export const tupleShapeTemplate = Symbol('tupleShapeTemplate');
 export const anyShapeTemplate = Symbol('anyShapeTemplate');
 export const shapePropertyTemplate = Symbol('shapePropertyTemplate');
+export const shapePropertyWithoutRangeTemplate = Symbol('shapePropertyWithoutRangeTemplate');
 export const anyOfUnionTemplate = Symbol('anyOfUnionTemplate');
 export const anyOfOptionsTemplate = Symbol('anyOfOptionsTemplate');
 export const examplesTemplate = Symbol('examplesTemplate');
 export const exampleTemplate = Symbol('exampleTemplate');
+export const propertyDescriptionTemplate = Symbol('propertyDescriptionTemplate');
+export const propertyDescriptionEditor = Symbol('propertyDescriptionEditor');
+export const checkSchemaPropertyUpdate = Symbol('checkSchemaPropertyUpdate');
+export const addPropertyButton = Symbol('addPropertyButton');
+export const addPropertyHandler = Symbol('addPropertyHandler');
+export const propertyCreatedHandler = Symbol('propertyCreatedHandler');
 
 const complexTypes = [
   ns.w3.shacl.NodeShape,
@@ -77,7 +94,7 @@ const complexTypes = [
   ns.aml.vocabularies.shapes.TupleShape,
 ];
 
-export default class AmfSchemaDocumentElement extends AmfDocumentationBase {
+export default class AmfSchemaDocumentElement extends DescriptionEditMixin(AmfDocumentationBase) {
   static get styles() {
     return [commonStyles, schemaStyles, elementStyles, MarkdownStyles];
   }
@@ -116,6 +133,11 @@ export default class AmfSchemaDocumentElement extends AmfDocumentationBase {
        * When set it ignores rendering schema title.
        */
       hideTitle: { type: Boolean, reflect: true },
+      /** 
+       * When set it allows to manipulate the properties.
+       * This is to be used with a combination with the `edit` property.
+       */
+      editProperties: { type: Boolean, reflect: true },
     };
   }
 
@@ -140,11 +162,20 @@ export default class AmfSchemaDocumentElement extends AmfDocumentationBase {
     /**
      * @type {string}
      */
+    this[propertyDescriptionEditor] = undefined;
+    /**
+     * @type {string}
+     */
     this.mimeType = undefined;
-    this.forceExamples = false;
-    this.hideTitle = false;
+    /** @type boolean */
+    this.forceExamples = undefined;
+    /** @type boolean */
+    this.hideTitle = undefined;
+    /** @type boolean */
+    this.editProperties = undefined;
 
     this[schemaUpdatedHandler] = this[schemaUpdatedHandler].bind(this);
+    this[propertyCreatedHandler] = this[propertyCreatedHandler].bind(this);
   }
 
   /**
@@ -153,6 +184,7 @@ export default class AmfSchemaDocumentElement extends AmfDocumentationBase {
   _attachListeners(node) {
     super._attachListeners(node);
     node.addEventListener(StoreEventTypes.Type.State.updated, this[schemaUpdatedHandler]);
+    node.addEventListener(StoreEventTypes.Type.State.propertyCreated, this[propertyCreatedHandler]);
   }
 
   /**
@@ -267,11 +299,82 @@ export default class AmfSchemaDocumentElement extends AmfDocumentationBase {
   async [schemaUpdatedHandler](e) {
     const { graphId, item } = e.detail;
     if (graphId !== this.domainId) {
+      this[checkSchemaPropertyUpdate](this[schemaValue], graphId, item);
       return;
     }
     this[schemaValue] = item;
     this[processSchema]();
     this.requestUpdate();
+  }
+
+  /**
+   * @param {ApiStoreStateCreateEvent} e
+   */
+  [propertyCreatedHandler](e) {
+    const { item, domainParent } = e.detail;
+    const schema = this[schemaValue];
+    if (!schema || domainParent !== this.domainId) {
+      return;
+    }
+    // @todo: can it be a property of an union here?
+    const type = /** @type ApiNodeShape */ (schema);
+    if (!Array.isArray(type.properties)) {
+      type.properties = [];
+    }
+    type.properties.push(item);
+    this.requestUpdate();
+  }
+
+  /**
+   * Checks the current schema whether it contains a property with the given id
+   * and if so it updates its value.
+   * @param {ApiShapeUnion} schema
+   * @param {string} id
+   * @param {any} updated
+   */
+  [checkSchemaPropertyUpdate](schema, id, updated) {
+    if (!schema) {
+      return;
+    }
+    const { types } = schema;
+    if (types.includes(ns.w3.shacl.NodeShape)) {
+      const type = /** @type ApiNodeShape */ (schema);
+      const { properties } = type;
+      for (let i = 0, len = properties.length; i < len; i++) {
+        const property = properties[i];
+        if (property.id === id) {
+          properties[i] = updated;
+          this.requestUpdate();
+          return;
+        }
+        if (property.range && property.range.id === id) {
+          property.range = updated;
+          this.requestUpdate();
+          return;
+        }
+      }
+      return;
+    }
+    if (types.includes(ns.aml.vocabularies.shapes.UnionShape)) {
+      const type = /** @type ApiUnionShape */ (schema);
+      const { anyOf, or, and } = type;
+      if (Array.isArray(anyOf) && anyOf.length) {
+        anyOf.forEach((item) => this[checkSchemaPropertyUpdate](item, id, updated));
+      }
+      if (Array.isArray(or) && or.length) {
+        or.forEach((item) => this[checkSchemaPropertyUpdate](item, id, updated));
+      }
+      if (Array.isArray(and) && and.length) {
+        and.forEach((item) => this[checkSchemaPropertyUpdate](item, id, updated));
+      }
+      return;
+    }
+    if (types.includes(ns.aml.vocabularies.shapes.ArrayShape) || types.includes(ns.aml.vocabularies.shapes.MatrixShape)) {
+      const type = /** @type ApiArrayShape */ (schema);
+      if (type.items) {
+        this[checkSchemaPropertyUpdate](type.items, id, updated)
+      }
+    }
   }
 
   /**
@@ -301,6 +404,56 @@ export default class AmfSchemaDocumentElement extends AmfDocumentationBase {
     this.requestUpdate();
   }
 
+  /**
+   * Updates the description of the schema.
+   * @param {string} markdown The new markdown to set.
+   * @param {DescriptionTemplateOptions=} opts Deserialized template options, if any.
+   * @return {Promise<void>} 
+   */
+  async [updateDescription](markdown, opts) {
+    if (opts) {
+      const { domainId } = opts;
+      // if (target === 'schema') {
+      //   await StoreEvents.Type.update(this, domainId, 'description', markdown);
+      // } else {
+      //   await StoreEvents.Type.update(this, domainId, 'description', markdown);
+      // }
+      await StoreEvents.Type.update(this, domainId, 'description', markdown);
+      this[propertyDescriptionEditor] = undefined;
+    } else {
+      await StoreEvents.Type.update(this, this.domainId, 'description', markdown);
+      this[schemaValue].description = markdown;
+    }
+  }
+
+  /**
+   * Overrides the parent focus handler to support properties description.
+   * @param {Event} e
+   */
+  async [descriptionFocusHandler](e) {
+    const mdElement = /** @type HTMLElement */ (e.currentTarget);
+    const { domainId, target } = mdElement.dataset;
+    if (!domainId || !target) {
+      await super[descriptionFocusHandler]();
+      return;
+    }
+    this[propertyDescriptionEditor] = domainId;
+    this[descriptionEditor] = false;
+    await this.requestUpdate();
+    this[focusMarkdownEditor]();
+  }
+
+  async [addPropertyHandler]() {
+    try {
+      await StoreEvents.Type.addProperty(this, this.domainId, {
+        name: 'New Property',
+      });
+    } catch (e) {
+      TelemetryEvents.exception(this, e.message, false);
+      ReportingEvents.error(this, e, `Unable to create a property: ${e.message}`, this.localName);
+    }
+  }
+
   render() {
     // todo: render schema examples
     const schema = this[schemaValue];
@@ -309,7 +462,7 @@ export default class AmfSchemaDocumentElement extends AmfDocumentationBase {
     }
     return html`
     ${this[titleTemplate]()}
-    ${this[descriptionTemplate]()}
+    ${this[descriptionTemplate](schema.description)}
     ${this[examplesTemplate]()}
     ${this[schemaContentTemplate](schema)}
     `;
@@ -331,24 +484,6 @@ export default class AmfSchemaDocumentElement extends AmfDocumentationBase {
     return html`
     <div class="schema-title">
       <span class="label">Schema: ${label}</span>
-    </div>
-    `;
-  }
-
-  /**
-   * @returns {TemplateResult|string} The template for the markdown description.
-   */
-  [descriptionTemplate]() {
-    const schema = this[schemaValue];
-    const { description } = schema;
-    if (!description) {
-      return '';
-    }
-    return html`
-    <div class="api-description">
-      <arc-marked .markdown="${description}" sanitize>
-        <div slot="markdown-html" class="markdown-body"></div>
-      </arc-marked>
     </div>
     `;
   }
@@ -434,11 +569,32 @@ export default class AmfSchemaDocumentElement extends AmfDocumentationBase {
   [nodeShapeTemplate](schema) {
     const { properties } = schema;
     if (!properties.length) {
-      return html`<div class="empty-info">Parameters are not defined for this schema.</div>`;
+      return html`
+        <div class="empty-info">Properties are not defined for this schema.</div>
+        ${this[addPropertyButton]()}
+      `;
     }
     return html`
     <div class="params-section">
       ${properties.map((item) => this[shapePropertyTemplate](item))}
+    </div>
+    `;
+  }
+
+  /**
+   * @returns {TemplateResult|string} The template for the add node's property, when allowed.
+   */
+  [addPropertyButton]() {
+    const { editProperties, edit } = this;
+    if (!edit || !editProperties) {
+      return '';
+    }
+    return html`
+    <div class="add-property-button">
+      <anypoint-button 
+        title="Creates a new property of this schema."
+        @click="${this[addPropertyHandler]}"
+      >Add new property</anypoint-button>
     </div>
     `;
   }
@@ -601,14 +757,17 @@ export default class AmfSchemaDocumentElement extends AmfDocumentationBase {
 
   /**
    * @param {ApiPropertyShape} schema
+   * @returns {TemplateResult} The template for the schema property item.
    */
   [shapePropertyTemplate](schema) {
     const { range, minCount } = schema;
+    if (!range) {
+      return this[shapePropertyWithoutRangeTemplate](schema);
+    }
     const { displayName, deprecated } = range;
     const required = minCount > 0;
     const type = readPropertyTypeLabel(range);
     const label = schema.name || displayName || range.name;
-    const desc = schema.description || range.description;
     const [domainType] = range.types;
     
     let isComplex = complexTypes.includes(domainType);
@@ -629,7 +788,7 @@ export default class AmfSchemaDocumentElement extends AmfDocumentationBase {
         ${isComplex ? html`<anypoint-button data-id="${schema.id}" @click="${this[expandHandler]}">${buttonLabel}</anypoint-button>` : ''}
       </div>
       <div class="description-column">
-        ${descriptionValueTemplate(desc)}
+        ${this[propertyDescriptionTemplate](schema)}
         ${detailsTemplate(range)}
       </div>
     </div>
@@ -639,5 +798,61 @@ export default class AmfSchemaDocumentElement extends AmfDocumentationBase {
     </div>
     ` : ''}
     `;
+  }
+
+  /**
+   * @param {ApiPropertyShape} schema
+   * @returns {TemplateResult} The template for the schema property item that has no range information.
+   */
+  [shapePropertyWithoutRangeTemplate](schema) {
+    const { minCount, name, displayName, deprecated } = schema;
+    const label = name || displayName || 'Unnamed property';
+    const required = minCount > 0;
+    return html`
+    <div class="property-container">
+      <div class="name-column">
+        ${paramNameTemplate(label, required, deprecated)}
+        <div class="param-type">
+          Unknown type
+        </div>
+      </div>
+      <div class="description-column">
+        ${this[propertyDescriptionTemplate](schema)}
+      </div>
+    </div>
+    `;
+  }
+
+  /**
+   * @param {ApiPropertyShape} schema
+   */
+  [propertyDescriptionTemplate](schema) {
+    const { range, description, id } = schema;
+    if (!range || description) {
+      return this[descriptionTemplate](description, {
+        domainId: id,
+        target: 'schema',
+      });
+    }
+    return this[descriptionTemplate](range.description, {
+      domainId: range.id,
+      target: 'range',
+    });
+  }
+
+  /**
+   * @param {string=} description The description to render.
+   * @param {DescriptionTemplateOptions=} opts Optional rendering options.
+   * @returns {TemplateResult|string} The template for the markdown description.
+   */
+  [descriptionTemplate](description, opts) {
+    if (!opts) {
+      return super[descriptionTemplate](description, opts);
+    }
+    const { edit } = this;
+    if (edit && this[propertyDescriptionEditor] === opts.domainId) {
+      return this[descriptionEditorTemplate](description, opts);
+    }
+    return super[descriptionTemplate](description, opts);
   }
 }

@@ -1,6 +1,7 @@
 /* eslint-disable class-methods-use-this */
 import { html } from 'lit-element';
 import { classMap } from 'lit-html/directives/class-map.js';
+import { ifDefined } from 'lit-html/directives/if-defined.js';
 import { StoreEvents, StoreEventTypes } from '@api-client/amf-store/worker.index.js';
 import { Styles as HttpStyles } from '@api-components/http-method-label';
 import { TelemetryEvents, ReportingEvents } from '@api-client/graph-project';
@@ -23,6 +24,7 @@ import {
   tablePropertyTemplate,
 } from './SchemaCommonTemplates.js';
 import schemaStyles from './styles/SchemaCommon.js';
+import { DescriptionEditMixin, updateDescription, descriptionTemplate } from './mixins/DescriptionEditMixin.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiEndPoint} ApiEndPoint */
@@ -47,7 +49,6 @@ export const responsesValue = Symbol('responsesValue');
 export const computeUrlValue = Symbol('computeUrlValue');
 export const preselectResponse = Symbol('preselectResponse');
 export const titleTemplate = Symbol('titleTemplate');
-export const descriptionTemplate = Symbol('descriptionTemplate');
 export const urlTemplate = Symbol('urlTemplate');
 export const requestTemplate = Symbol('requestTemplate');
 export const responseTemplate = Symbol('responseTemplate');
@@ -67,7 +68,7 @@ export const metaDataTemplate = Symbol('metaDataTemplate');
  * A web component that renders the documentation page for an API operation built from 
  * the AMF graph model.
  */
-export default class AmfOperationDocumentElement extends AmfDocumentationBase {
+export default class AmfOperationDocumentElement extends DescriptionEditMixin(AmfDocumentationBase) {
   static get styles() {
     return [elementStyles, commonStyles, HttpStyles.default, MarkdownStyles, schemaStyles];
   }
@@ -398,6 +399,16 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
     this.selectedStatus = String(tabs.selected);
   }
 
+  /**
+   * Updates the description of the operation.
+   * @param {string} markdown The new markdown to set.
+   * @return {Promise<void>} 
+   */
+  async [updateDescription](markdown) {
+    await StoreEvents.Operation.update(this, this.domainId, 'description', markdown);
+    this[operationValue].description = markdown;
+  }
+
   render() {
     if (!this[operationValue]) {
       return html``;
@@ -405,7 +416,7 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
     return html`
     ${this[titleTemplate]()}
     ${this[deprecatedTemplate]()}
-    ${this[descriptionTemplate]()}
+    ${this[descriptionTemplate](this[operationValue].description)}
     ${this[metaDataTemplate]()}
     ${this[urlTemplate]()}
     ${this[requestTemplate]()}
@@ -418,6 +429,7 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
    * @returns {TemplateResult} The template for the Operation title.
    */
   [titleTemplate]() {
+    const { edit } = this;
     const operation = this[operationValue];
     const { name, method, deprecated, summary } = operation;
     const label = summary || name || method;
@@ -428,7 +440,7 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
     return html`
     <div class="operation-header">
       <div class="operation-title">
-        <span class="${classMap(labelClasses)}">${label}</span>
+        <span class="${classMap(labelClasses)}" contentEditable="${ifDefined(edit ? 'plaintext-only' : undefined)}">${label}</span>
       </div>
       <p class="sub-header">API operation</p>
     </div>
@@ -436,7 +448,7 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
   }
 
   /**
-   * @returns {TemplateResult|string} The template for the Operation meta information.
+   * @returns {TemplateResult[]|string} The template for the Operation meta information.
    */
   [metaDataTemplate]() {
     const operation = this[operationValue];
@@ -472,24 +484,6 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
   }
 
   /**
-   * @returns {TemplateResult|string} The template for the markdown description.
-   */
-  [descriptionTemplate]() {
-    const operation = this[operationValue];
-    const { description } = operation;
-    if (!description) {
-      return '';
-    }
-    return html`
-    <div class="api-description">
-      <arc-marked .markdown="${description}" sanitize>
-        <div slot="markdown-html" class="markdown-body"></div>
-      </arc-marked>
-    </div>
-    `;
-  }
-
-  /**
    * @returns {TemplateResult} The template for the operation's URL.
    */
   [urlTemplate]() {
@@ -513,7 +507,12 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
       return '';
     }
     return html`
-    <amf-request-document .domainId="${operation.request}" payloadOpened headersOpened parametersOpened></amf-request-document>
+    <amf-request-document 
+      .domainId="${operation.request}" 
+      payloadOpened 
+      headersOpened 
+      parametersOpened
+      .edit="${this.edit}"></amf-request-document>
     `;
   }
 
@@ -562,7 +561,7 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
       return html`<div class="empty-info">Select a response to render the documentation.</div>`;
     }
     return html`
-    <amf-response-document .domainId="${response.id}" headersOpened payloadOpened></amf-response-document>
+    <amf-response-document .domainId="${response.id}" headersOpened payloadOpened .edit="${this.edit}"></amf-response-document>
     `;
   }
 
@@ -574,7 +573,7 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
     if (!operation || !Array.isArray(operation.security) || !operation.security.length) {
       return '';
     }
-    const content = operation.security.map((id) => html`<amf-security-requirement-document .domainId="${id}"></amf-security-requirement-document>`);
+    const content = operation.security.map((id) => html`<amf-security-requirement-document .domainId="${id}" .edit="${this.edit}"></amf-security-requirement-document>`);
     return this[paramsSectionTemplate]('Security', 'securityOpened', content);
   }
 }

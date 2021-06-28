@@ -26,6 +26,16 @@ export class AmfDocumentationBase extends EventsTargetMixin(LitElement) {
    */
   domainId: string;
   /** 
+   * Enabled compatibility with the Anypoint platform.
+   * @attribute
+   */
+  anypoint: boolean;
+  /** 
+   * When set it enables API editing features.
+   * @attribute
+   */
+  edit: boolean;
+  /** 
    * The timeout after which the `queryGraph()` function is called 
    * in the debouncer.
    */

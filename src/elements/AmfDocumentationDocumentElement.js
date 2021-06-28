@@ -1,16 +1,17 @@
 /* eslint-disable class-methods-use-this */
 import { html } from 'lit-element';
-import { StoreEvents, StoreEventTypes } from '@api-client/amf-store';
+import { StoreEvents, StoreEventTypes } from '@api-client/amf-store/worker.index.js';
 import { Styles as HttpStyles } from '@api-components/http-method-label';
 import { TelemetryEvents, ReportingEvents } from '@api-client/graph-project';
-import markdownStyles from '@advanced-rest-client/markdown-styles/markdown-styles.js';
-import '@advanced-rest-client/arc-marked/arc-marked.js';
+import { MarkdownStyles } from '@advanced-rest-client/highlight';
+import '@advanced-rest-client/highlight/arc-marked.js';
 import elementStyles from './styles/ApiDocumentationDocument.js';
 import commonStyles from './styles/Common.js';
 import { 
   AmfDocumentationBase,
   queryingValue,
 } from './AmfDocumentationBase.js';
+import { DescriptionEditMixin, updateDescription, descriptionTemplate } from './mixins/DescriptionEditMixin.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiDocumentation} ApiDocumentation */
@@ -18,16 +19,15 @@ import {
 
 export const documentationValue = Symbol('documentationValue');
 export const titleTemplate = Symbol('titleTemplate');
-export const descriptionTemplate = Symbol('descriptionTemplate');
 export const documentationUpdatedHandler = Symbol('serverUpdatedHandler');
 
 /**
  * A web component that renders the documentation page for an API documentation (like in RAML documentations) built from 
  * the AMF graph model.
  */
-export default class AmfDocumentationDocumentElement extends AmfDocumentationBase {
+export default class AmfDocumentationDocumentElement extends DescriptionEditMixin(AmfDocumentationBase) {
   static get styles() {
-    return [elementStyles, commonStyles, HttpStyles.default, markdownStyles];
+    return [elementStyles, commonStyles, HttpStyles.default, MarkdownStyles];
   }
 
   constructor() {
@@ -97,13 +97,23 @@ export default class AmfDocumentationDocumentElement extends AmfDocumentationBas
     this.requestUpdate();
   }
 
+  /**
+   * Updates the description of the operation.
+   * @param {string} markdown The new markdown to set.
+   * @return {Promise<void>} 
+   */
+  async [updateDescription](markdown) {
+    await StoreEvents.Documentation.update(this, this.domainId, 'description', markdown);
+    this[documentationValue].description = markdown;
+  }
+
   render() {
     if (!this[documentationValue]) {
       return html``;
     }
     return html`
     ${this[titleTemplate]()}
-    ${this[descriptionTemplate]()}
+    ${this[descriptionTemplate](this[documentationValue].description)}
     `;
   }
 
@@ -119,24 +129,6 @@ export default class AmfDocumentationDocumentElement extends AmfDocumentationBas
       <div class="documentation-title">
         <span class="label">${label}</span>
       </div>
-    </div>
-    `;
-  }
-
-  /**
-   * @returns {TemplateResult|string} The template for the markdown description.
-   */
-  [descriptionTemplate]() {
-    const operation = this[documentationValue];
-    const { description } = operation;
-    if (!description) {
-      return '';
-    }
-    return html`
-    <div class="api-description">
-      <arc-marked .markdown="${description}" sanitize>
-        <div slot="markdown-html" class="markdown-body"></div>
-      </arc-marked>
     </div>
     `;
   }
