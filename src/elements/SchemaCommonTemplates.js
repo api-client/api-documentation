@@ -63,10 +63,7 @@ function pillsAndTable(pills, items) {
  * @return {TemplateResult} The template for the property name value. 
  */
 export function paramNameTemplate(name, required=false, deprecated=false) {
-  let label = String(name||'');
-  if (required) {
-    label += '*';
-  }
+  const label = String(name||'');
   const classes = {
     'param-name': true,
     required,

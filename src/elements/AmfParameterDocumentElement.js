@@ -188,13 +188,16 @@ export default class AmfParameterDocumentElement extends DescriptionEditMixin(Am
     const type = this[typeLabelValue];
     const schema = this[schemaValue];
     return html`
-    <div class="property-container">
+    <div class="property-container simple">
       <div class="name-column">
         ${paramNameTemplate(name, required)}
+        <span class="headline-separator"></span>
         ${typeValueTemplate(type)}
       </div>
       <div class="description-column">
         ${this[descriptionTemplate]()}
+      </div>
+      <div class="details-column">
         ${detailsTemplate(schema)}
       </div>
     </div>

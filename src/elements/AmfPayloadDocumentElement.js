@@ -186,7 +186,7 @@ export default class AmfPayloadDocumentElement extends AmfDocumentationBase {
       return html`<div class="empty-info">Schema is not defined for this payload.</div>`;
     }
     return html`
-    <amf-schema-document .domainId="${schema}" .mimeType="${mediaType}" forceExamples .edit="${this.edit}"></amf-schema-document>
+    <amf-schema-document .domainId="${schema}" .mimeType="${mediaType}" forceExamples .edit="${this.edit}" schemaTitle></amf-schema-document>
     `;
   }
 }

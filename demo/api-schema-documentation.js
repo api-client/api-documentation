@@ -8,7 +8,7 @@ import '@anypoint-web-components/anypoint-item/anypoint-item.js';
 import '@anypoint-web-components/anypoint-checkbox/anypoint-checkbox.js';
 import { NavigationEventTypes, NavigationEditCommands, NavigationContextMenu, ReportingEventTypes } from '@api-client/graph-project';
 import '@api-client/graph-project/graph-api-navigation.js';
-import '../amf-schema-documentation.js';
+import '../amf-schema-document.js';
 import { IdbAmfStoreService } from './lib/IdbAmfStoreService.js';
 
 /** @typedef {import('@api-client/graph-project').APIGraphNavigationEvent} APIGraphNavigationEvent */
@@ -29,9 +29,9 @@ class ComponentPage extends DemoPage {
     this.selectedId = undefined;
     this.selectedType = undefined;
     this.apiId = undefined;
-    this.edit = true;
+    this.edit = false;
     this.store = new IdbAmfStoreService();
-    this.componentName = 'amf-schema-documentation';
+    this.componentName = 'amf-schema-document';
     this.actionHandler = this.actionHandler.bind(this);
     window.addEventListener(NavigationEventTypes.navigate, this.navigationHandler.bind(this));
     window.addEventListener(NavigationEventTypes.navigateExternal, this.externalNavigationHandler.bind(this));
@@ -181,12 +181,13 @@ class ComponentPage extends DemoPage {
       @state-changed="${this._demoStateHandler}"
       ?dark="${darkThemeActive}"
     >
-      <amf-schema-documentation
-        .domainId="${selectedId}"
-        ?edit="${edit}"
+      <amf-schema-document 
         slot="content"
-      >
-      </amf-schema-documentation>
+        .domainId="${selectedId}" 
+        forceExamples 
+        .edit="${edit}" 
+        .editProperties="${edit}"
+      ></amf-schema-document>
 
       <label slot="options" id="mainOptionsLabel">Options</label>
       <anypoint-checkbox
@@ -217,6 +218,7 @@ class ComponentPage extends DemoPage {
         <button id="loadApiGraph" data-src="streetlights.json" ?disabled="${!initialized}">Streetlights (async) API</button>
         <button id="loadApiGraph" data-src="oas-3-api.json" ?disabled="${!initialized}">OAS 3</button>
         <button id="loadApiGraph" data-src="petstore.json" ?disabled="${!initialized}">Pet store (OAS 3)</button>
+        <button id="loadApiGraph" data-src="modular-api.json" ?disabled="${!initialized}">Domains</button>
         <button id="createWebApi" ?disabled="${!initialized}">Create empty Web API</button>
       </div>
     </section>

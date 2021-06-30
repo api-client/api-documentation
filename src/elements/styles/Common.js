@@ -41,10 +41,6 @@ export default css`
   margin: 20px 0;
 }
 
-.params-section {
-  margin-bottom: 40px;
-}
-
 .params-title {
   display: flex;
   align-items: center;

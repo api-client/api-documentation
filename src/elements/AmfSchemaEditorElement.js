@@ -1,14 +1,12 @@
 /* eslint-disable no-plusplus */
 /* eslint-disable class-methods-use-this */
 import { html } from 'lit-element';
-import { classMap } from "lit-html/directives/class-map";
 import { StoreEvents, StoreEventTypes, ns } from '@api-client/amf-store/worker.index.js';
 import { TelemetryEvents, ReportingEvents } from '@api-client/graph-project';
 import { MarkdownStyles } from '@advanced-rest-client/highlight';
 import '@advanced-rest-client/highlight/arc-marked.js';
 import '@anypoint-web-components/anypoint-radio-button/anypoint-radio-button.js';
 import '@anypoint-web-components/anypoint-radio-button/anypoint-radio-group.js';
-import { chevronRight } from '@advanced-rest-client/arc-icons';
 import commonStyles from './styles/Common.js';
 import elementStyles from './styles/ApiSchema.js';
 import schemaStyles from './styles/SchemaCommon.js';
@@ -66,7 +64,6 @@ export const processSchema = Symbol('processSchema');
 export const titleTemplate = Symbol('titleTemplate');
 export const schemaUpdatedHandler = Symbol('schemaUpdatedHandler');
 export const expandHandler = Symbol('expandHandler');
-export const expandKeydownHandler = Symbol('expandKeydownHandler');
 export const anyOfSelectedHandler = Symbol('anyOfSelectedHandler');
 export const schemaContentTemplate = Symbol('schemaContentTemplate');
 export const scalarShapeTemplate = Symbol('scalarSchemaTemplate');
@@ -89,8 +86,6 @@ export const checkSchemaPropertyUpdate = Symbol('checkSchemaPropertyUpdate');
 export const addPropertyButton = Symbol('addPropertyButton');
 export const addPropertyHandler = Symbol('addPropertyHandler');
 export const propertyCreatedHandler = Symbol('propertyCreatedHandler');
-export const propertyDecoratorTemplate = Symbol('propertyDecoratorTemplate');
-export const toggleExpandedProperty = Symbol('toggleExpandedProperty');
 
 const complexTypes = [
   ns.w3.shacl.NodeShape,
@@ -99,7 +94,7 @@ const complexTypes = [
   ns.aml.vocabularies.shapes.TupleShape,
 ];
 
-export default class AmfSchemaDocumentElement extends DescriptionEditMixin(AmfDocumentationBase) {
+export default class AmfSchemaEditorElement extends DescriptionEditMixin(AmfDocumentationBase) {
   static get styles() {
     return [commonStyles, schemaStyles, elementStyles, MarkdownStyles];
   }
@@ -135,14 +130,14 @@ export default class AmfSchemaDocumentElement extends DescriptionEditMixin(AmfDo
        */
       forceExamples: { type: Boolean, reflect: true },
       /** 
+       * When set it ignores rendering schema title.
+       */
+      hideTitle: { type: Boolean, reflect: true },
+      /** 
        * When set it allows to manipulate the properties.
        * This is to be used with a combination with the `edit` property.
        */
       editProperties: { type: Boolean, reflect: true },
-      /** 
-       * When set it renders the title with lower emphasis and adding `schema` prefix.
-       */
-      schemaTitle: { type: Boolean, reflect: true },
     };
   }
 
@@ -175,9 +170,9 @@ export default class AmfSchemaDocumentElement extends DescriptionEditMixin(AmfDo
     /** @type boolean */
     this.forceExamples = undefined;
     /** @type boolean */
-    this.editProperties = undefined;
+    this.hideTitle = undefined;
     /** @type boolean */
-    this.schemaTitle = undefined;
+    this.editProperties = undefined;
 
     this[schemaUpdatedHandler] = this[schemaUpdatedHandler].bind(this);
     this[propertyCreatedHandler] = this[propertyCreatedHandler].bind(this);
@@ -226,7 +221,6 @@ export default class AmfSchemaDocumentElement extends DescriptionEditMixin(AmfDo
     this[schemaValue] = undefined;
     try {
       const info = await StoreEvents.Type.get(this, schemaId);
-      // console.log(info);
       this[schemaValue] = info;
     } catch (e) {
       TelemetryEvents.exception(this, e.message, false);
@@ -389,27 +383,6 @@ export default class AmfSchemaDocumentElement extends DescriptionEditMixin(AmfDo
   [expandHandler](e) {
     const button = /** @type HTMLElement */ (e.currentTarget);
     const { id } = button.dataset;
-    this[toggleExpandedProperty](id);
-  }
-
-  /**
-   * @param {KeyboardEvent} e
-   */
-  [expandKeydownHandler](e) {
-    if (e.code !== 'Space') {
-      return;
-    }
-    e.preventDefault();
-    const button = /** @type HTMLElement */ (e.currentTarget);
-    const { id } = button.dataset;
-    this[toggleExpandedProperty](id);
-  }
-
-  /**
-   * Toggles an "expanded" state for a property children.
-   * @param {string} id Parent property id that has children to toggle visibility of.
-   */
-  [toggleExpandedProperty](id) {
     const list = this[expandedValue];
     const index = list.indexOf(id);
     if (index === -1) {
@@ -482,6 +455,7 @@ export default class AmfSchemaDocumentElement extends DescriptionEditMixin(AmfDo
   }
 
   render() {
+    // todo: render schema examples
     const schema = this[schemaValue];
     if (!schema) {
       return html``;
@@ -498,23 +472,18 @@ export default class AmfSchemaDocumentElement extends DescriptionEditMixin(AmfDo
    * @returns {TemplateResult|string} The template for the schema title.
    */
   [titleTemplate]() {
+    if (this.hideTitle) {
+      return '';
+    }
     const schema = this[schemaValue];
     const { name, displayName } = schema;
     const label = displayName || name;
     if (label === 'schema') {
       return '';
     }
-    const { schemaTitle } = this;
-    const headerCss = {
-      'schema-title': true,
-      'low-emphasis': !!schemaTitle,
-    };
-    const prefix = schemaTitle ? 'Schema: ' : '';
     return html`
-    <div class="schema-header">
-      <div class="${classMap(headerCss)}">
-        <span class="label">${prefix}${label}</span>
-      </div>
+    <div class="schema-title">
+      <span class="label">Schema: ${label}</span>
     </div>
     `;
   }
@@ -689,10 +658,8 @@ export default class AmfSchemaDocumentElement extends DescriptionEditMixin(AmfDo
       }
     });
     return html`
-    <div class="union-container">
-      ${this[anyOfOptionsTemplate](schemaId, options, selected)}
-      ${this[schemaContentTemplate](renderedItem)}
-    </div>
+    ${this[anyOfOptionsTemplate](schemaId, options, selected)}
+    ${this[schemaContentTemplate](renderedItem)}
     `;
   }
 
@@ -812,59 +779,24 @@ export default class AmfSchemaDocumentElement extends DescriptionEditMixin(AmfDo
     }
     const allExpanded = this[expandedValue];
     const expanded = isComplex && allExpanded.includes(schema.id);
+    const buttonLabel = expanded ? 'Hide' : 'Show schema';
     return html`
     <div class="property-container">
-      <div class="property-border"></div>
-      <div class="property-value">
-        <div class="property-headline">
-          ${this[propertyDecoratorTemplate](isComplex, expanded, schema.id)}
-          ${paramNameTemplate(label, required, deprecated)}
-          <span class="headline-separator"></span>
-          ${typeValueTemplate(type)}
-        </div>
-        <div class="description-column">
-          ${this[propertyDescriptionTemplate](schema)}
-        </div>
-        <div class="details-column">
-          ${detailsTemplate(range)}
-        </div>
+      <div class="name-column">
+        ${paramNameTemplate(label, required, deprecated)}
+        ${typeValueTemplate(type)}
+        ${isComplex ? html`<anypoint-button data-id="${schema.id}" @click="${this[expandHandler]}">${buttonLabel}</anypoint-button>` : ''}
       </div>
+      <div class="description-column">
+        ${this[propertyDescriptionTemplate](schema)}
+        ${detailsTemplate(range)}
       </div>
+    </div>
     ${expanded ? html`
     <div class="shape-children">
-      <div class="property-border"></div>
       ${this[schemaContentTemplate](range)}
     </div>
     ` : ''}
-    `;
-  }
-
-  /**
-   * @param {boolean} isComplex
-   * @param {boolean} expanded
-   * @param {string} schemaId
-   * @returns {TemplateResult} THe template for the line decorator in front of the property name.
-   */
-  [propertyDecoratorTemplate](isComplex, expanded, schemaId) {
-    const toggleIcon = isComplex ? html`
-    <span class="object-toggle-icon ${expanded ? 'opened' : ''}">${chevronRight}</span>
-    ` : '';
-    const decoratorClasses = {
-      'property-decorator': true,
-      scalar: !isComplex,
-      object: !!isComplex,
-    };
-    const toggleHandler = isComplex ? this[expandHandler] : undefined;
-    const keydownHandler = isComplex ? this[expandKeydownHandler] : undefined;
-    const tabIndex = isComplex ? '0' : '-1';
-    return html`
-    <div 
-      class="${classMap(decoratorClasses)}" 
-      data-id="${schemaId}" 
-      @click="${toggleHandler}"
-      @keydown="${keydownHandler}"
-      tabindex="${tabIndex}"
-    ><hr/>${toggleIcon}</div>
     `;
   }
 

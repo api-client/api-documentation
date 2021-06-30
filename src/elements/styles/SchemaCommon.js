@@ -1,29 +1,181 @@
 import { css } from "lit-element";
 
 export default css`
+  :host {
+    --column-padding-left: 84px;
+    --property-border-width: 3px;
+    --property-border-color: var(--primary-color, #2196f3);
+    --property-container-padding: 12px;
+  }
+
   .property-container {
     display: flex;
     align-items: flex-start;
-    flex-direction: row;
   }
 
-  .name-column {
+  .property-container.simple {
+    flex-direction: column;
+  }
+
+  .property-border {
+    width: var(--property-border-width);
+    min-width: var(--property-border-width);
+    align-self: stretch;
+    background-color: var(--property-border-color);
+  }
+
+  .property-value {
+    padding: var(--property-container-padding) 0px;
+    flex: 1;
+  }
+
+  .property-container:last-of-type .property-border {
+    align-self: flex-start;
+    /* padding of the content container + title container / 2 + border size  / 2 */
+    height: calc(var(--property-container-padding) + 52px / 2 + var(--property-border-width) / 2);
+    border-bottom-left-radius: var(--property-border-width);
+  }
+
+  .shape-children .property-container:first-of-type .property-border {
+    border-top-right-radius: var(--property-border-width);
+  }
+
+  .shape-children {
+    display: flex;
+    position: relative;
+  }
+
+  .shape-children > .property-border {
+    background-color: var(--property-children-border-color, #bdbdbd);
+    margin-right: 21px;
+  }
+
+  .shape-children::before {
+    content: '';
+    width: calc(18px + var(--property-border-width) * 2);
+    height: var(--property-border-width);
+    background-color: var(--property-border-color);
+    position: absolute;
+    left: 0px;
+    top: 0px;
+    border-bottom-left-radius: var(--property-border-width);
+  }
+
+  .shape-children:last-of-type > .property-border {
+    background-color: transparent;
+  }
+
+  .union-options {
+    padding: 12px 0px 12px 20px;
+    border-left: var(--property-border-width) var(--property-border-color) dashed;
+    box-sizing: border-box;
+  }
+
+  .shape-children:last-of-type > .property-border {
+    margin-bottom: 60px;
+  }
+
+  .property-decorator {
+    width: var(--column-padding-left);
+    align-self: stretch;
+    display: flex;
+    align-items: center;
+    padding-right: 20px;
+    color: var(--property-border-color);
+    box-sizing: border-box;
+  }
+
+  .property-decorator hr {
+    width: 100%;
+    border-color: currentColor;
+    border-width: var(--property-border-width);
+    border-style: solid;
+    border-top: none;
+  }
+
+  .property-decorator.scalar::after {
+    content: "";
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    border-radius: 50%;
+    background-color: transparent;
+    border: 3px solid currentColor;
+  }
+
+  .property-decorator.object::after {
+    content: "";
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    min-width: 16px;
+    background-color: transparent;
+    border: 3px solid currentColor;
+  }
+
+  .property-decorator.object .object-toggle-icon {
+    cursor: pointer;
+  }
+
+  .object-toggle-icon {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    fill: currentColor;
+    transition: transform 0.23s linear;
+  }
+
+  .object-toggle-icon.opened {
+    transform: rotate(90deg);
+  }
+
+  .property-headline,
+  .property-container.simple .name-column {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    height: 52px;
+  }
+
+  .property-container:not(.simple) .name-column {
     width: 140px;
     margin-right: 20px;
   }
 
-  .description-column {
-    flex: 1;
+  .property-container:not(.simple) .description-column {
+    padding-left: var(--column-padding-left);
+  }
+
+  .property-container:not(.simple) .details-column {
+    padding-left: var(--column-padding-left);
+  }
+
+  .details-column {
+    align-self: stretch;
   }
 
   .param-name {
     font-weight: 500;
-    font-size: 16px;
+    font-size: 1.2rem;
     word-break: break-all;
+  }
+
+  .param-name.required::after {
+    content: '*';
+    margin-left: -4px;
   }
 
   .param-name.deprecated {
     text-decoration: line-through;
+  }
+
+  .headline-separator {
+    display: inline-block;
+    width: 1px;
+    background-color: gray;
+    align-self: stretch;
+    margin: 12px 20px;
   }
 
   .param-type {
@@ -133,10 +285,6 @@ export default css`
       var(--code-background-color)
     );
     color: var(--operation-params-example-color, var(--code-color, inherit));
-  }
-
-  .shape-children {
-    margin-left: 20px;
   }
 
   .pill {
