@@ -1,12 +1,12 @@
 /* eslint-disable class-methods-use-this */
-import { JsonExampleGenerator } from './generators/JsonExampleGenerator.js';
-import { XmlExampleGenerator } from './generators/XmlExampleGenerator.js';
-import { UrlEncodedGenerator } from './generators/UrlEncodedGenerator.js';
+import { JsonExampleGenerator } from '../generators/JsonExampleGenerator.js';
+import { XmlExampleGenerator } from '../generators/XmlExampleGenerator.js';
+import { UrlEncodedGenerator } from '../generators/UrlEncodedGenerator.js';
 
 /** @typedef {import('@api-client/amf-store').ApiExample} ApiExample */
 /** @typedef {import('@api-client/amf-store').ApiDataNode} ApiDataNode */
 /** @typedef {import('@api-client/amf-store').ApiShapeUnion} ApiShapeUnion */
-/** @typedef {import('./types').SchemaExample} SchemaExample */
+/** @typedef {import('../types').SchemaExample} SchemaExample */
 
 /**
  * A class that processes AMF's Example object to read the example value

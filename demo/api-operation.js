@@ -2,13 +2,10 @@
 import { html } from 'lit-html';
 import { DemoPage } from '@advanced-rest-client/arc-demo-helper';
 import '@advanced-rest-client/arc-demo-helper/arc-interactive-demo.js';
-import '@anypoint-web-components/anypoint-dropdown-menu/anypoint-dropdown-menu.js';
-import '@anypoint-web-components/anypoint-listbox/anypoint-listbox.js';
-import '@anypoint-web-components/anypoint-item/anypoint-item.js';
 import '@anypoint-web-components/anypoint-checkbox/anypoint-checkbox.js';
-import { AmfStoreService } from '@api-client/amf-store/worker.index.js';
 import { NavigationEventTypes, NavigationEditCommands, NavigationContextMenu, ReportingEventTypes } from '@api-client/graph-project';
 import '@api-client/graph-project/graph-api-navigation.js';
+import { IdbAmfStoreService } from './lib/IdbAmfStoreService.js';
 import '../amf-operation-document.js';
 
 /** @typedef {import('@api-client/graph-project').APIGraphNavigationEvent} APIGraphNavigationEvent */
@@ -30,9 +27,7 @@ class ComponentPage extends DemoPage {
     this.selectedId = undefined;
     this.selectedType = undefined;
     this.apiId = undefined;
-    this.store = new AmfStoreService(window, {
-      amfLocation: '/node_modules/@api-client/amf-store/amf-bundle.js',
-    });
+    this.store = new IdbAmfStoreService();
     this.componentName = 'amf-operation-document';
     this.actionHandler = this.actionHandler.bind(this);
     window.addEventListener(NavigationEventTypes.navigate, this.navigationHandler.bind(this));
@@ -42,12 +37,19 @@ class ComponentPage extends DemoPage {
   }
 
   async autoLoad() {
-    await this.initStore();
-    await this.loadDemoApi('demo-api.json');
+    const restored = await this.store.restoreState();
+    if (!restored) {
+      await this.loadDemoApi('demo-api.json');
+    } else {
+      const api = await this.store.getApi();
+      this.apiId = api.id;
+      this.loaded = true;
+    }
+    this.initialized = true;
   }
 
   async firstRender() {
-    await super.firstRender();
+    super.firstRender();
     const element = document.body.querySelector('graph-api-navigation');
     if (element) {
       this.contextMenu = new NavigationContextMenu(element);

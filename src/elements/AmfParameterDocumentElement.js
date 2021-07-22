@@ -7,7 +7,7 @@ import '@advanced-rest-client/highlight/arc-marked.js';
 import commonStyles from './styles/Common.js';
 import elementStyles from './styles/ApiParameter.js';
 import schemaStyles from './styles/SchemaCommon.js';
-import { readPropertyTypeLabel } from '../Utils.js';
+import { readPropertyTypeLabel } from '../lib/Utils.js';
 import { paramNameTemplate, typeValueTemplate, detailsTemplate } from './SchemaCommonTemplates.js';
 import { 
   AmfDocumentationBase,

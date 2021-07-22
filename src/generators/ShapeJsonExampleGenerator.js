@@ -102,8 +102,16 @@ export class ShapeJsonExampleGenerator extends ShapeExampleGeneratorBase {
    * @returns {object}
    */
   [nodeShapeObject](schema) {
-    const result = {};
-    const { properties } = schema;
+    let result = {};
+    const { properties, inherits } = schema;
+    if (Array.isArray(inherits)) {
+      inherits.forEach(((s) => {
+        const part = this.toObject(s);
+        if (typeof part === 'object') {
+          result = { ...result, ...part };
+        }
+      }));
+    }
     properties.forEach((property) => {
       const { name } = property;
       const value = this[propertyShapeObject](property);

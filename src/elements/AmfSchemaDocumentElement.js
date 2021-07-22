@@ -12,7 +12,7 @@ import { chevronRight } from '@advanced-rest-client/arc-icons';
 import commonStyles from './styles/Common.js';
 import elementStyles from './styles/ApiSchema.js';
 import schemaStyles from './styles/SchemaCommon.js';
-import { readPropertyTypeLabel } from '../Utils.js';
+import { readPropertyTypeLabel } from '../lib/Utils.js';
 import { 
   detailsTemplate, 
   paramNameTemplate, 
@@ -21,7 +21,7 @@ import {
   scalarDetailsTemplate,
   unionDetailsTemplate,
 } from './SchemaCommonTemplates.js';
-import { ApiExampleGenerator } from '../ApiExampleGenerator.js';
+import { ApiExampleGenerator } from '../lib/ApiExampleGenerator.js';
 import { ShapeExampleGenerator } from '../generators/ShapeExampleGenerator.js';
 import { 
   AmfDocumentationBase,

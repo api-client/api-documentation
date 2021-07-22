@@ -76,7 +76,7 @@ export class AmfDocumentationBase extends EventsTargetMixin(LitElement) {
    * @param content The content to render.
    * @returns The template for a toggle section with a content.
    */
-  [paramsSectionTemplate](label: string, openedProperty: string, content: TemplateResult|TemplateResult[]): TemplateResult;
+  [paramsSectionTemplate](label: string, openedProperty: string, content: TemplateResult | TemplateResult[]): TemplateResult;
 
   /**
    * @param id Schema domain id

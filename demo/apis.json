@@ -1,9 +1,0 @@
-{
-  "async-api/async-api.yaml": { "type": "ASYNC 2.0", "mime": "application/yaml" },
-  "demo-api/demo-api.raml": { "type": "RAML 1.0", "mime": "application/yaml" },
-  "modular-api/modular-api.raml": { "type": "RAML 1.0", "mime": "application/yaml" },
-  "google-drive-api/google-drive-api.raml": { "type": "RAML 1.0", "mime": "application/yaml" },
-  "oas-3-api/oas-3-api.yaml": { "type": "OAS 3.0", "mime": "application/yaml" },
-  "streetlights/streetlights.yaml": { "type": "ASYNC 2.0", "mime": "application/yaml" },
-  "petstore/petstore.yaml":  { "type": "OAS 3.0", "mime": "application/yaml" }
-}

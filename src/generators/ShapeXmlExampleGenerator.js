@@ -42,12 +42,20 @@ import { XmlExampleGenerator } from './XmlExampleGenerator.js';
 export const normalizeXmlTagName = name => name.replace(/[^a-zA-Z0-9-_.]/g, '');
 const UNKNOWN_TYPE = 'unknown-type';
 
+export const collectProperties = Symbol('collectProperties');
+
 /**
  * @param {ApiAnyShape} shape
  */
 export function shapeToXmlTagName(shape) {
-  const { name, xmlSerialization } = shape;
-  const label = xmlSerialization && xmlSerialization.name ? xmlSerialization.name : name || UNKNOWN_TYPE;
+  const { name, xmlSerialization, inherits=[] } = shape;
+  let label = xmlSerialization && xmlSerialization.name ? xmlSerialization.name : name || UNKNOWN_TYPE;
+  if (label === 'schema' && inherits.length) {
+    const n = inherits.find(i => i.name && i.name !== 'schema');
+    if (n) {
+      label = n.name === 'type' ? n.displayName || n.name : n.name;
+    }
+  }
   return normalizeXmlTagName(label);
 }
 
@@ -105,15 +113,38 @@ export class ShapeXmlExampleGenerator extends ShapeExampleGeneratorBase {
 
   /**
    * @param {ApiNodeShape} schema
+   * @returns {ApiPropertyShape[]}
+   */
+  [collectProperties](schema) {
+    let result = [];
+    const { properties, inherits } = schema;
+    if (properties.length) {
+      result = [...properties];
+    }
+    if (Array.isArray(inherits)) {
+      inherits.forEach((s) => {
+        const p = /** @type ApiNodeShape */ (s).properties;
+        if (Array.isArray(p) && p.length) {
+          result = [...result, ...p];
+        }
+      });
+    }
+
+    return result;
+  }
+
+  /**
+   * @param {ApiNodeShape} schema
    * @param {ProcessNodeOptions=} options
    * @returns {string}
    */
   [nodeShapeObject](schema, options={}) {
-    const { properties } = schema;
+    // const { properties, inherits } = schema;
     const label = options.forceName || shapeToXmlTagName(schema);
     const attributes = [];
     const parts = [];
     const currentIndent = (options.indent || 0);
+    const properties = this[collectProperties](schema);
     properties.forEach((property) => {
       const { range } = property;
       if (range.xmlSerialization) {
