@@ -3,6 +3,7 @@
 /* eslint-disable class-methods-use-this */
 import { html } from 'lit-element';
 import { dedupeMixin } from '@open-wc/dedupe-mixin';
+import { ns } from '@api-client/amf-store';
 import '@advanced-rest-client/highlight/arc-marked.js';
 import '@anypoint-web-components/anypoint-button/anypoint-icon-button.js';
 import '@advanced-rest-client/arc-icons/arc-icon.js';
@@ -14,6 +15,7 @@ import * as InputCache from '../../lib/InputCache.js';
 /** @typedef {import('@api-client/amf-store').ApiParametrizedSecuritySchemeRecursive} ApiParametrizedSecuritySchemeRecursive */
 /** @typedef {import('@api-client/amf-store').ApiSecuritySettings} ApiSecurityApiKeySettings */
 /** @typedef {import('@api-client/amf-store').ApiNodeShape} ApiNodeShape */
+/** @typedef {import('@api-client/amf-store').ApiParameterRecursive} ApiParameterRecursive */
 /** @typedef {import('../AmfAuthorizationMethodElement').default} AmfAuthorizationMethodElement */
 /** @typedef {import('@advanced-rest-client/arc-types').Authorization.RamlCustomAuthorization} RamlCustomAuthorization */
 /** @typedef {import('../../types').OperationParameter} OperationParameter */
@@ -136,9 +138,12 @@ const mxFunction = (base) => {
       const params = this[parametersValue];
       return !params.some((param) => {
         if (nils.includes(param.paramId)) {
-          return true;
+          return false;
         }
         const value = InputCache.get(this, param.paramId, this.globalCache);
+        if (!value && !param.parameter.required) {
+          return false;
+        }
         return !value;
       });
     }
@@ -184,18 +189,30 @@ const mxFunction = (base) => {
       if (queryString) {
         const shape = /** @type ApiNodeShape */ (queryString);
         const { properties } = shape;
+        const binding = 'query';
         properties.forEach((property) => {
+          const { id, range, name, minCount } = property;
+          const constructed = /** @type ApiParameterRecursive */ ({
+            id,
+            binding,
+            schema: range,
+            name,
+            examples: [],
+            payloads: [],
+            types: [ns.aml.vocabularies.apiContract.Parameter],
+            required: minCount > 0,
+          });
           params.push({
-            binding: 'query',
-            paramId: queryString.id,
-            parameter: queryString,
+            binding,
+            paramId: id,
+            parameter: constructed,
             source,
             schemaId: property.id,
             schema: property,
           });
         })
       }
-      this.schemeName = info.scheme.name;
+      this.schemeName = info.name || info.scheme.name;
       this.schemeDescription = info.scheme.description;
       this.requestUpdate();
       notifyChange(this);

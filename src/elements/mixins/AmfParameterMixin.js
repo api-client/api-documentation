@@ -4,6 +4,7 @@
 import { LitElement, html } from 'lit-element';
 import { dedupeMixin } from '@open-wc/dedupe-mixin';
 import { ns } from '@api-client/amf-store';
+import { notifyChange, } from '@advanced-rest-client/authorization/src/Utils.js';
 import '@anypoint-web-components/anypoint-dropdown-menu/anypoint-dropdown-menu.js';
 import '@anypoint-web-components/anypoint-listbox/anypoint-listbox.js';
 import '@anypoint-web-components/anypoint-item/anypoint-item.js';
@@ -163,6 +164,7 @@ const mxFunction = base => {
       // sets cached value of the input.
       const typed = AmfInputParser.parseUserInput(value, param.schema);
       InputCache.set(this, domainId, typed, this.globalCache, isArray === 'true', index ? Number(index) : undefined);
+      notifyChange(this);
     }
 
     /**
@@ -180,6 +182,7 @@ const mxFunction = base => {
         return;
       }
       InputCache.set(this, domainId, checked, this.globalCache, isArray === 'true', index ? Number(index) : undefined);
+      notifyChange(this);
     }
 
     /**
@@ -198,6 +201,7 @@ const mxFunction = base => {
       }
       InputCache.remove(this, domainId, this.globalCache, index ? Number(index) : undefined);
       this.requestUpdate();
+      notifyChange(this);
     }
 
     /**
@@ -218,6 +222,7 @@ const mxFunction = base => {
       const { value } = enumValues[list.selected];
       const typed = AmfInputParser.parseUserInput(value, param.schema);
       InputCache.set(this, domainId, typed, this.globalCache, isArray === 'true', index ? Number(index) : undefined);
+      notifyChange(this);
     }
 
     /**
@@ -241,6 +246,7 @@ const mxFunction = base => {
         list.splice(index, 1);
         this.requestUpdate();
       }
+      notifyChange(this);
     }
 
     /**
@@ -316,7 +322,7 @@ const mxFunction = base => {
      * @return {TemplateResult} A template for an input form item for the given type and schema
      */
     [textInputTemplate](parameter, schema, type, opts={}) {
-      const { id } = parameter;
+      const { id, binding } = parameter;
       const { pattern, minimum, minLength, maxLength, maximum, multipleOf } = schema;
       const label = AmfSchemaProcessor.readLabelValue(parameter, schema);
       const { required, allowEmptyValue, } = parameter;
@@ -343,8 +349,9 @@ const mxFunction = base => {
       <div class="form-item">
         <anypoint-input 
           data-domain-id="${id}"
-          data-is-array="${opts.arrayItem}"
+          data-is-array="${ifDefined(opts.arrayItem)}"
           data-index="${ifDefined(opts.index)}"
+          data-binding="${ifDefined(binding)}"
           name="${parameter.name || schema.name}" 
           class="form-input"
           ?required="${required && !allowEmptyValue}"
@@ -402,7 +409,7 @@ const mxFunction = base => {
       const enumValues = /** @type ApiScalarNode[] */ (schema.values || []);
       const selectedValue = this[readInputValue](parameter, schema);
       const selected = enumValues.findIndex(i => i.value === selectedValue);
-      const { required, id } = parameter;
+      const { required, id, binding } = parameter;
       const title = parameter.description || schema.description;
       const nillables = this[nilValues];
       const nillDisabled = !!opts.nillable && nillables.includes(id);
@@ -410,6 +417,8 @@ const mxFunction = base => {
       <div class="form-item">
         <anypoint-dropdown-menu
           class="param-selector"
+          name="${parameter.name || schema.name}"
+          data-binding="${ifDefined(binding)}"
           ?compatibility="${anypoint}"
           ?required="${required}"
           title="${ifDefined(title)}"
@@ -426,7 +435,7 @@ const mxFunction = base => {
             .selected="${selected}"
             @selected="${this[enumSelectionHandler]}"
           >
-            ${enumValues.map((value) => html`<anypoint-item data-type="${value.dataType}">${value.value}</anypoint-item>`)}
+            ${enumValues.map((value) => html`<anypoint-item data-type="${value.dataType}" data-value="${value.value}">${value.value}</anypoint-item>`)}
           </anypoint-listbox>
         </anypoint-dropdown-menu>
         ${opts.nillable ? this[nillInputTemplate](parameter) : ''}
@@ -457,6 +466,7 @@ const mxFunction = base => {
       <div class="form-item">
         <anypoint-checkbox 
           name="${parameter.name || schema.name}"
+          data-binding="${ifDefined(parameter.binding)}"
           ?required="${required}"
           .checked="${value}"
           title="${ifDefined(title)}"
@@ -479,6 +489,7 @@ const mxFunction = base => {
       <anypoint-checkbox 
         class="nil-option"
         data-domain-id="${parameter.id}"
+        data-binding="${ifDefined(parameter.binding)}"
         title="Makes the property nillable (e.g. inserts null into the schema)"
         @change="${this[nilHandler]}"
       >Nil</anypoint-checkbox>
@@ -563,7 +574,7 @@ const mxFunction = base => {
       const options = { arrayItem: true, };
       const inputs = values.map((value, index) => this[parameterSchemaTemplate](parameter, items, { ...options, value, index }));
       return html`
-      <div class="array-form-item" data-param-id="${id}">
+      <div class="array-form-item" data-param-id="${id}" data-param-label="${label}">
         <div class="array-title"><span class="label">${label}</span></div>
         ${inputs}
         ${this[addArrayItemTemplate](id)}

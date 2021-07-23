@@ -215,8 +215,8 @@ class ComponentPage extends DemoPage {
   contentTemplate() {
     return html`
       <h2>API operation</h2>
-      ${this._demoTemplate()}
       ${this._dataTemplate()}
+      ${this._demoTemplate()}
     `;
   }
 
@@ -295,21 +295,40 @@ class ComponentPage extends DemoPage {
       <h4>Initialization</h4>
       <div @click="${this.actionHandler}">
         <button id="init">Init</button>
-        <button id="loadApiGraph" data-src="demo-api.json" data-vendor="RAML 1.0" ?disabled="${!initialized}">Load demo API</button>
-        <button id="loadApiGraph" data-src="async-api.json" data-vendor="ASYNC 2.0" ?disabled="${!initialized}">Load async API</button>
-        <button id="loadApiGraph" data-src="google-drive-api.json" data-vendor="RAML 1.0" ?disabled="${!initialized}">Load Google Drive API</button>
-        <button id="loadApiGraph" data-src="streetlights.json" data-vendor="ASYNC 2.0" ?disabled="${!initialized}">Streetlights (async) API</button>
-        <button id="loadApiGraph" data-src="oas-3-api.json" data-vendor="OAS 3.0" ?disabled="${!initialized}">OAS 3</button>
-        <button id="loadApiGraph" data-src="petstore.json" data-vendor="OAS 3.0" ?disabled="${!initialized}">Pet store (OAS 3)</button>
-        <button id="loadApiGraph" data-src="oas-bearer.json" data-vendor="OAS 3.0" ?disabled="${!initialized}">OAS Bearer</button>
-        <button id="loadApiGraph" data-src="oauth-flows.json" data-vendor="OAS 3.0" ?disabled="${!initialized}">OAuth flows</button>
-        <button id="loadApiGraph" data-src="oauth-pkce.json" data-vendor="RAML 1.0" ?disabled="${!initialized}">OAuth PKCE</button>
-        <button id="loadApiGraph" data-src="secured-api.json" data-vendor="RAML 1.0" ?disabled="${!initialized}">Secured api</button>
-        <button id="loadApiGraph" data-src="secured-unions.json" data-vendor="ASYNC 2.0" ?disabled="${!initialized}">Secured unions</button>
         <button id="createWebApi" ?disabled="${!initialized}">Create empty Web API</button>
         <button ?disabled="${!initialized}" id="selectApiDirectory">Select API</button>
       </div>
+      ${this.apisListTemplate()}
     </section>
+    `;
+  }
+
+  apisListTemplate() {
+    const apis = [
+      ['demo-api.json', 'RAML 1.0', 'Demo API'],
+      ['async-api.json', 'ASYNC 2.0', 'ASYNC API'],
+      ['google-drive-api.json', 'RAML 1.0', 'Google Drive API'],
+      ['streetlights.json', 'ASYNC 2.0', 'Streetlights (async) API'],
+      ['oas-3-api.json', 'OAS 3.0', 'OAS 3.0'],
+      ['petstore.json', 'OAS 3.0', 'Pet store (OAS 3)'],
+      ['oas-bearer.json', 'OAS 3.0', 'OAS Bearer'],
+      ['oauth-flows.json', 'OAS 3.0', 'OAuth flows'],
+      ['oauth-pkce.json', 'RAML 1.0', 'OAuth PKCE'],
+      ['secured-api.json', 'RAML 1.0', 'Secured api'],
+      ['secured-unions.json', 'ASYNC 2.0', 'Secured unions'],
+      ['api-keys.json', 'OAS 3.0', 'API keys'],
+    ];
+    const { initialized } = this;
+    return html`
+    <h4>APIs</h4>
+    <div @click="${this.actionHandler}">
+    ${apis.map(([file, vendor, label]) => html`
+      <button id="loadApiGraph" 
+        data-src="${file}" 
+        data-vendor="${vendor}" 
+        ?disabled="${!initialized}"
+      >${label}</button>`)}
+    </div>
     `;
   }
 }

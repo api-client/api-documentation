@@ -192,7 +192,7 @@ const mxFunction = (base) => {
       params.push({
         binding,
         paramId: id,
-        parameter: /** @type any */ (config),
+        parameter: { ... /** @type any */ (config), binding },
         source: 'settings',
         schemaId: info.scheme.id,
         schema: /** @type any */ (info.scheme),

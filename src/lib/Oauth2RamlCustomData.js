@@ -23,17 +23,22 @@ export class Oauth2RamlCustomData {
   readParams(properties) {
     const result = [];
     Object.keys(properties).forEach((key) => {
-      const definition = /** @type ApiObjectNode */ (properties[key]);
-      if (!definition.types.includes(ns.aml.vocabularies.data.Object)) {
-        return;
+      const definition = properties[key];
+      if (definition.types.includes(ns.aml.vocabularies.data.Object)) {
+        const property = this.getProperty(/** @type ApiObjectNode */ (definition));
+        result.push(property);
+      } else if (definition.types.includes(ns.aml.vocabularies.data.Scalar)) {
+        const property = this.getPropertyScalar(/** @type ApiScalarNode */ (definition));
+        result.push(property);
       }
-      const property = this.getProperty(definition);
-      result.push(property);
     });
     return result;
   }
 
   /**
+   * Creates an ApiParameter for an annotation that has properties.
+   * This expects the properties to be defined like RAML's type definition.
+   * 
    * @param {ApiObjectNode} definition
    * @returns {ApiParameterRecursive}
    */
@@ -54,6 +59,31 @@ export class Oauth2RamlCustomData {
       const req = /** @type ApiScalarNode */ (properties.required);
       result.required = req.value === 'true';
     }
+    return result;
+  }
+
+  /**
+   * Creates an ApiParameter for an annotation that has no properties but rather a simplified
+   * notation of `propertyName: dataType`.
+   * 
+   * @param {ApiScalarNode} definition
+   * @returns {ApiParameterRecursive}
+   */
+  getPropertyScalar(definition) {
+    const { dataType, id, name } = definition;
+    const result = /** @type ApiParameterRecursive */ ({
+      id,
+      name,
+      examples: [],
+      payloads: [],
+      types: [ns.aml.vocabularies.apiContract.Parameter],
+    });
+    const schema = /** @type ApiScalarShape */ (this.createSchema());
+    schema.types = [ns.aml.vocabularies.shapes.ScalarShape];
+    schema.id = id;
+    schema.name = name;
+    schema.dataType = this.typeToSchemaType(dataType);
+    result.schema = schema;
     return result;
   }
 

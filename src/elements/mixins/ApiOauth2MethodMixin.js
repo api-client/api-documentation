@@ -487,7 +487,7 @@ const mxFunction = (base) => {
         return;
       }
       const info = /** @type ApiParametrizedSecuritySchemeRecursive */ (this.security);
-      if (!info || !info.scheme || !!info.scheme.settings) {
+      if (!info || !info.scheme || !info.scheme.settings) {
         return;
       }
       const config = /** @type ApiSecurityOAuth2Settings */ (info.scheme.settings);

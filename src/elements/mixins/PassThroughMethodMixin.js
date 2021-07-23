@@ -92,7 +92,7 @@ const mxFunction = (base) => {
       if (!settings) {
         return;
       }
-      this[restoreModelValue]('headers', settings.header);
+      this[restoreModelValue]('header', settings.header);
       this[restoreModelValue]('query', settings.query);
       this.requestUpdate();
     }
@@ -143,13 +143,17 @@ const mxFunction = (base) => {
     [validatePassThrough]() {
       const nils = this[nilValues];
       const params = /** @type OperationParameter[] */ (this[parametersValue]);
-      return !params.some((param) => {
+      const hasInvalid = params.some((param) => {
         if (nils.includes(param.paramId)) {
-          return true;
+          return false;
         }
         const value = InputCache.get(this, param.paramId, this.globalCache);
+        if (!value && !param.parameter.required) {
+          return false;
+        }
         return !value;
       });
+      return !hasInvalid;
     }
 
     [initializePassThroughModel]() {
@@ -186,7 +190,7 @@ const mxFunction = (base) => {
         return;
       }
       const list = object.properties.map((item) => {
-        const { id, range, name, } = item;
+        const { id, range, name, minCount } = item;
         return /** @type ApiParameterRecursive */ ({
           id,
           binding: 'query',
@@ -195,6 +199,7 @@ const mxFunction = (base) => {
           examples: [],
           payloads: [],
           types: [ns.aml.vocabularies.apiContract.Parameter],
+          required: minCount > 0,
         });
       });
       this[appendToParams](list, 'query', true);

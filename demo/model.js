@@ -16,5 +16,7 @@ config.set('oauth-flows/oauth-flows.yaml', { type: "OAS 3.0" });
 config.set('petstore/petstore.yaml', { type: "OAS 3.0" });
 config.set('oas-bearer/oas-bearer.yaml', { type: "OAS 3.0" });
 config.set('secured-unions/secured-unions.yaml', { type: "OAS 3.0" });
+config.set('api-keys/api-keys.yaml', { type: "OAS 3.0" });
+config.set('21143/21143.json', { type: "OAS 2.0" });
 
 generate(config);

@@ -6,6 +6,8 @@ export { default as AmfResourceDocumentationElement } from './src/elements/AmfRe
 export { default as AmfResponseDocumentElement } from './src/elements/AmfResponseDocumentElement.js';
 export { default as AmfSchemaDocumentElement } from './src/elements/AmfSchemaDocumentElement.js';
 export { default as AmfDocumentationDocumentElement } from './src/elements/AmfDocumentationDocumentElement.js';
+export { default as AmfAuthorizationEditorElement } from './src/elements/AmfAuthorizationEditorElement.js';
+export { default as AmfAuthorizationMethodElement } from './src/elements/AmfAuthorizationMethodElement.js';
 export { ApiExampleGenerator } from './src/lib/ApiExampleGenerator.js';
 export { ShapeExampleGenerator } from './src/generators/ShapeExampleGenerator.js';
 export * as Utils from './src/lib/Utils.js';
