@@ -4,9 +4,12 @@ import { DemoPage } from '@advanced-rest-client/arc-demo-helper';
 import '@advanced-rest-client/arc-demo-helper/arc-interactive-demo.js';
 import '@anypoint-web-components/anypoint-checkbox/anypoint-checkbox.js';
 import { NavigationEventTypes, NavigationEditCommands, NavigationContextMenu, ReportingEventTypes } from '@api-client/graph-project';
+import { TransportEventTypes } from '@advanced-rest-client/arc-events';
 import '@api-client/graph-project/graph-api-navigation.js';
 import { MonacoLoader } from '@advanced-rest-client/monaco-support';
 import { ApiSearch } from '@api-client/amf-store/worker.index.js';
+import '@advanced-rest-client/authorization/oauth2-authorization.js';
+import '@advanced-rest-client/authorization/oauth1-authorization.js';
 import { IdbAmfStoreService } from './lib/IdbAmfStoreService.js';
 import '../amf-http-request.js';
 
@@ -31,11 +34,13 @@ class ComponentPage extends DemoPage {
     this.apiId = undefined;
     this.store = new IdbAmfStoreService();
     this.componentName = 'amf-http-request';
-    this.oauth2redirect = 'http://auth.advancedrestclient.com/arc.html';
+    // this.oauth2redirect = 'http://auth.advancedrestclient.com/arc.html';
+    this.oauth2redirect = `${window.location.origin}/node_modules/@advanced-rest-client/authorization/oauth-popup.html`;
     this.actionHandler = this.actionHandler.bind(this);
     window.addEventListener(NavigationEventTypes.navigate, this.navigationHandler.bind(this));
     window.addEventListener(NavigationEventTypes.navigateExternal, this.externalNavigationHandler.bind(this));
     window.addEventListener(ReportingEventTypes.error, this.errorHandler.bind(this));
+    window.addEventListener(TransportEventTypes.request, this.transportHandler.bind(this));
     this.autoLoad();
   }
 
@@ -67,6 +72,13 @@ class ComponentPage extends DemoPage {
       this.contextMenu.registerCommands(NavigationEditCommands);
       this.contextMenu.connect();
     }
+  }
+
+  /**
+   * @param {CustomEvent} e
+   */
+  transportHandler(e) {
+    console.log(e.detail);
   }
 
   /**
@@ -214,6 +226,8 @@ class ComponentPage extends DemoPage {
 
   contentTemplate() {
     return html`
+      <oauth2-authorization></oauth2-authorization>
+      <oauth1-authorization></oauth1-authorization>
       <h2>API operation</h2>
       ${this._dataTemplate()}
       ${this._demoTemplate()}

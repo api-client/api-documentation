@@ -702,7 +702,19 @@ export default class AmfHttpRequestElement extends AmfParameterMixin(AmfEditorsB
    * This dispatches the send event with request details and the hosting application
    * should decide what to do with it.
    */
-  send() {
+  async send() {
+    const authElement = this.shadowRoot.querySelector('amf-authorization-editor');
+    if (authElement) {
+      const valid = authElement.validate();
+      if (!valid) {
+        const auth = authElement.serialize();
+        const oauth = auth.find(i => i.type === 'oauth 2');
+        if (oauth) {
+          await authElement.authorize();
+        }
+      }
+    }
+
     const request = this.serialize();
     const uuid = v4();
     TransportEvents.request(this, {

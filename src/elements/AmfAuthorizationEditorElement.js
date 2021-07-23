@@ -251,6 +251,25 @@ export default class AmfAuthorizationEditorElement extends AmfEditorsBase {
     };
   }
 
+  /**
+   * Calls the `authorize()` function on each rendered authorization methods.
+   * Currently only `OAuth 1.0` and `OAuth 2.0` actually perform the authorization. 
+   * 
+   * Each method is called in order to make sure the user is not overwhelmed with 
+   * dialogs or other UI elements.
+   * 
+   * The function rejects when at least one authorization method rejects.
+   */
+  async authorize() {
+    const nodes = this.shadowRoot.querySelectorAll('amf-authorization-method');
+    const list = Array.from(nodes);
+    while (list.length) {
+      const auth = list.shift();
+      // eslint-disable-next-line no-await-in-loop
+      await auth.authorize();
+    }
+  }
+
   render() {
     const methods = this[methodsValue];
     if (!methods || !methods.schemes.length) {

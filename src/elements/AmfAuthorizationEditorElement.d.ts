@@ -120,6 +120,17 @@ export default class AmfAuthorizationEditorElement extends AmfEditorsBase {
    */
   [createSettings](target: AmfAuthorizationMethodElement): RequestAuthorization;
 
+  /**
+   * Calls the `authorize()` function on each rendered authorization methods.
+   * Currently only `OAuth 1.0` and `OAuth 2.0` actually perform the authorization. 
+   * 
+   * Each method is called in order to make sure the user is not overwhelmed with 
+   * dialogs or other UI elements.
+   * 
+   * The function rejects when at least one authorization method rejects.
+   */
+  authorize(): Promise<void>;
+
   render(): TemplateResult;
 
   [methodTemplate](scheme: ApiParametrizedSecuritySchemeRecursive, type: string): TemplateResult | string;
