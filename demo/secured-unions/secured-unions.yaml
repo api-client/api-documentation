@@ -38,7 +38,7 @@ paths:
   /single:
     get:
       security:
-        - BasicAuth: []
+        - ApiKeyQuery: []
       responses:
         default:
           description: Unexpected error

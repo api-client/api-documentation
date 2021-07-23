@@ -93,6 +93,7 @@ export default class AmfAuthorizationEditorElement extends AmfEditorsBase {
     this[processModel]();
     this[queryingValue] = false;
     await this.requestUpdate();
+    this.dispatchEvent(new Event('ready'));
   }
   
   /**
@@ -105,7 +106,6 @@ export default class AmfAuthorizationEditorElement extends AmfEditorsBase {
     }
     try {
       const info = await StoreEvents.Security.getRequirementRecursive(this, id);
-      // console.log(info);
       this[securityValue] = info;
     } catch (e) {
       TelemetryEvents.exception(this, e.message, false);
@@ -136,16 +136,14 @@ export default class AmfAuthorizationEditorElement extends AmfEditorsBase {
   [computeMethods](schemes) {
     const result = {
       types: [],
-      names: [],
       schemes: [],
     };
     schemes.forEach((security) => {
-      const [type, name] = this[listSchemeLabels](security);
-      if (!type || !name) {
+      const type = this[listSchemeLabels](security);
+      if (!type) {
         return;
       }
       result.types.push(type);
-      result.names.push(name);
       result.schemes.push(security);
     });
     return result;
@@ -154,17 +152,17 @@ export default class AmfAuthorizationEditorElement extends AmfEditorsBase {
   /**
    * Reads authorization scheme's name and type from the AMF model.
    * @param {ApiParametrizedSecuritySchemeRecursive} security
-   * @return {string[]} First item is the type and the second is the name. May be undefined.
+   * @return {string|undefined}
    */
   [listSchemeLabels](security) {
     const { name, scheme } = security;
     if (name === 'null') {
       // RAML allows to define a "null" scheme. This means that the authorization
       // for this endpoint is optional.
-      return [name, 'No authorization'];
+      return 'No authorization';
     }
     if (!scheme) {
-      return [];
+      return undefined;
     }
     let { type } = scheme;
     if (type === 'http') {
@@ -173,11 +171,12 @@ export default class AmfAuthorizationEditorElement extends AmfEditorsBase {
       if (!config) {
         // this happens when AMF doesn't properly read graph model back to the store.
         // AMF team promised to fix this...
-        return [];
+        type = undefined;
+      } else {
+        type = config.scheme;
       }
-      type = config.scheme;
     }
-    return [type, name];
+    return type;
   }
 
   /**
@@ -203,9 +202,9 @@ export default class AmfAuthorizationEditorElement extends AmfEditorsBase {
     let valid = true;
     for (let i = 0, len = nodes.length; i < len; i++) {
       const node = /** @type AmfAuthorizationMethodElement */(nodes[i]);
-      const result = node.validate();
-      if (!result) {
-        valid = result;
+      const methodValid = node.validate();
+      if (!methodValid) {
+        valid = methodValid;
         break;
       } else if (node.type === 'oauth 2' && !node.accessToken) {
         valid = false;
@@ -254,7 +253,7 @@ export default class AmfAuthorizationEditorElement extends AmfEditorsBase {
 
   render() {
     const methods = this[methodsValue];
-    if (!methods || !methods.names.length) {
+    if (!methods || !methods.schemes.length) {
       return html``;
     }
     return html`
