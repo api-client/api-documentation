@@ -1,99 +1,28 @@
 /* eslint-disable lit-a11y/click-events-have-key-events */
 import { html } from 'lit-html';
-import { DemoPage } from '@advanced-rest-client/arc-demo-helper';
 import '@advanced-rest-client/arc-demo-helper/arc-interactive-demo.js';
 import '@anypoint-web-components/anypoint-checkbox/anypoint-checkbox.js';
-import { AmfStoreService } from '@api-client/amf-store/worker.index.js';
-import { NavigationEventTypes, NavigationEditCommands, NavigationContextMenu, ReportingEventTypes } from '@api-client/graph-project';
+import { NavigationEventTypes } from '@api-client/graph-project';
 import '@api-client/graph-project/graph-api-navigation.js';
 import '../amf-documentation-document.js';
+import { AmfDemoBase } from './lib/AmfDemoBase.js';
 
 /** @typedef {import('@api-client/graph-project').APIGraphNavigationEvent} APIGraphNavigationEvent */
 /** @typedef {import('@api-client/graph-project').APIExternalNavigationEvent} APIExternalNavigationEvent */
 /** @typedef {import('@api-client/graph-project').GraphErrorEvent} GraphErrorEvent */
 
-class ComponentPage extends DemoPage {
+class ComponentPage extends AmfDemoBase {
   constructor() {
     super();
     this.initObservableProperties([
-      'loaded', 'initialized',
       'selectedId', 'selectedType',
-      'apiId',
     ]);
-    this.loaded = false;
-    this.initialized = false;
     this.renderViewControls = true;
     this.selectedId = undefined;
     this.selectedType = undefined;
-    this.apiId = undefined;
-    this.store = new AmfStoreService(window, {
-      amfLocation: '/node_modules/@api-client/amf-store/amf-bundle.js',
-    });
     this.componentName = 'amf-documentation-document';
-    this.actionHandler = this.actionHandler.bind(this);
     window.addEventListener(NavigationEventTypes.navigate, this.navigationHandler.bind(this));
     window.addEventListener(NavigationEventTypes.navigateExternal, this.externalNavigationHandler.bind(this));
-    window.addEventListener(ReportingEventTypes.error, this.errorHandler.bind(this));
-    this.autoLoad();
-  }
-
-  async autoLoad() {
-    await this.initStore();
-    await this.loadDemoApi('demo-api.json', 'RAML 1.0');
-  }
-
-  async firstRender() {
-    await super.firstRender();
-    const element = document.body.querySelector('graph-api-navigation');
-    if (element) {
-      this.contextMenu = new NavigationContextMenu(element);
-      this.contextMenu.registerCommands(NavigationEditCommands);
-      this.contextMenu.connect();
-    }
-  }
-
-  /**
-   * @param {GraphErrorEvent} e 
-   */
-  errorHandler(e) {
-    const { error, description, component } = e;
-    console.error(`[${component}]: ${description}`);
-    console.error(error);
-  }
-
-  async initStore() {
-    await this.store.init();
-    this.initialized = true;
-  }
-
-  /**
-   * @param {Event} e 
-   */
-  async actionHandler(e) {
-    const button = /** @type HTMLButtonElement */ (e.target);
-    switch (button.id) {
-      case 'init': this.initStore(); break;
-      case 'loadApiGraph': this.loadDemoApi(button.dataset.src, button.dataset.vendor); break;
-      case 'createWebApi': this.createWebApi(); break;
-      default: console.warn(`Unhandled action ${button.id}`);
-    }
-  }
-
-  async loadDemoApi(file, vendor) {
-    this.loaded = false;
-    const rsp = await fetch(`./${file}`);
-    const model = await rsp.text();
-    await this.store.loadGraph(model, vendor);
-    const api = await this.store.getApi();
-    this.apiId = api.id;
-    this.loaded = true;
-  }
-
-  async createWebApi() {
-    this.loaded = false;
-    const api = await this.store.createWebApi();
-    this.apiId = api;
-    this.loaded = true;
   }
 
   /**
@@ -123,12 +52,12 @@ class ComponentPage extends DemoPage {
   contentTemplate() {
     return html`
       <h2>API documentation</h2>
-      ${this._dataTemplate()}
-      ${this._demoTemplate()}
+      ${this.dataTemplate()}
+      ${this.demoTemplate()}
     `;
   }
 
-  _demoTemplate() {
+  demoTemplate() {
     const { loaded } = this;
     return html`
     <section class="documentation-section">
@@ -188,52 +117,6 @@ class ComponentPage extends DemoPage {
         Edit graph
       </anypoint-checkbox>
     </arc-interactive-demo>
-    `;
-  }
-  
-  _dataTemplate() {
-    const { initialized } = this;
-    return html`
-    <section class="documentation-section">
-      <h3>Store actions</h3>
-
-      <h4>Initialization</h4>
-      <div @click="${this.actionHandler}">
-        <button id="init">Init</button>
-        <button id="createWebApi" ?disabled="${!initialized}">Create empty Web API</button>
-        <button ?disabled="${!initialized}" id="selectApiDirectory">Select API</button>
-      </div>
-      ${this.apisListTemplate()}
-    </section>
-    `;
-  }
-
-  apisListTemplate() {
-    const apis = [
-      ['demo-api.json', 'RAML 1.0', 'Demo API'],
-      ['async-api.json', 'ASYNC 2.0', 'ASYNC API'],
-      ['google-drive-api.json', 'RAML 1.0', 'Google Drive API'],
-      ['streetlights.json', 'ASYNC 2.0', 'Streetlights (async) API'],
-      ['oas-3-api.json', 'OAS 3.0', 'OAS 3.0'],
-      ['petstore.json', 'OAS 3.0', 'Pet store (OAS 3)'],
-      ['oas-bearer.json', 'OAS 3.0', 'OAS Bearer'],
-      ['oauth-flows.json', 'OAS 3.0', 'OAuth flows'],
-      ['oauth-pkce.json', 'RAML 1.0', 'OAuth PKCE'],
-      ['secured-api.json', 'RAML 1.0', 'Secured api'],
-      ['secured-unions.json', 'ASYNC 2.0', 'Secured unions'],
-      ['api-keys.json', 'OAS 3.0', 'API keys'],
-    ];
-    const { initialized } = this;
-    return html`
-    <h4>APIs</h4>
-    <div @click="${this.actionHandler}">
-    ${apis.map(([file, vendor, label]) => html`
-      <button id="loadApiGraph" 
-        data-src="${file}" 
-        data-vendor="${vendor}" 
-        ?disabled="${!initialized}"
-      >${label}</button>`)}
-    </div>
     `;
   }
 }
