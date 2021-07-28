@@ -70,7 +70,7 @@ export const expandKeydownHandler = Symbol('expandKeydownHandler');
 export const anyOfSelectedHandler = Symbol('anyOfSelectedHandler');
 export const schemaContentTemplate = Symbol('schemaContentTemplate');
 export const scalarShapeTemplate = Symbol('scalarSchemaTemplate');
-export const nodeShapeTemplate = Symbol('nodeSchemaTemplate');
+export const nodeShapeTemplate = Symbol('nodeShapeTemplate');
 export const unionShapeTemplate = Symbol('unionSchemaTemplate');
 export const fileShapeTemplate = Symbol('fileShapeTemplate');
 export const schemaShapeTemplate = Symbol('schemaShapeTemplate');
@@ -244,12 +244,21 @@ export default class AmfSchemaDocumentElement extends DescriptionEditMixin(AmfDo
       this[examplesValue] = undefined;
       return;
     }
-    let { examples } = type;
-    if (Array.isArray(examples) && examples.length) {
-      examples = examples.filter((i) => !!i.value || !!i.structuredValue);
+    const { examples=[] } = type;
+    let examplesCopy = [...examples];
+
+    if (Array.isArray(type.inherits) && type.inherits.length) {
+      type.inherits.forEach((item) => {
+        if (Array.isArray(item.examples) && item.examples.length) {
+          examplesCopy = examplesCopy.concat([...item.examples]);
+        }
+      });
     }
-    if (Array.isArray(examples) && examples.length) {
-      this[examplesValue] = this[evaluateExamples](examples);
+    if (Array.isArray(examplesCopy) && examplesCopy.length) {
+      examplesCopy = examplesCopy.filter((i) => !!i.value || !!i.structuredValue);
+    }
+    if (Array.isArray(examplesCopy) && examplesCopy.length) {
+      this[examplesValue] = this[evaluateExamples](examplesCopy);
     } else {
       const { mimeType, forceExamples } = this;
       this[examplesValue] = undefined;
@@ -598,8 +607,17 @@ export default class AmfSchemaDocumentElement extends DescriptionEditMixin(AmfDo
    * @returns {TemplateResult} The template for the node shape.
    */
   [nodeShapeTemplate](schema) {
-    const { properties } = schema;
-    if (!properties.length) {
+    const { properties, inherits } = schema;
+    let items = [...(properties || [])];
+    if (Array.isArray(inherits) && inherits.length) {
+      inherits.forEach((item) => {
+        if (item.types.includes(ns.w3.shacl.NodeShape)) {
+          const typed = /** @type ApiNodeShape */ (item);
+          items = items.concat([...(typed.properties || [])]);
+        }
+      });
+    }
+    if (!items.length) {
       return html`
         <div class="empty-info">Properties are not defined for this schema.</div>
         ${this[addPropertyButton]()}
@@ -607,10 +625,31 @@ export default class AmfSchemaDocumentElement extends DescriptionEditMixin(AmfDo
     }
     return html`
     <div class="params-section">
-      ${properties.map((item) => this[shapePropertyTemplate](item))}
+      ${items.map((item) => this[shapePropertyTemplate](item))}
     </div>
     `;
   }
+
+  // /**
+  //  * @param {ApiShapeUnion[]} parents
+  //  * @returns {TemplateResult[]|undefined}
+  //  */
+  // [inheritedTemplate](parents) {
+  //   if (!Array.isArray(parents) || !parents.length) {
+  //     return undefined;
+  //   }
+  //   const parts = [];
+  //   parents.forEach((item) => {
+  //     const tpl = this[schemaContentTemplate](item);
+  //     if (tpl) {
+  //       parts.push(tpl);
+  //     }
+  //   });
+  //   if (!parts.length) {
+  //     return undefined;
+  //   }
+  //   return parts;
+  // }
 
   /**
    * @returns {TemplateResult|string} The template for the add node's property, when allowed.

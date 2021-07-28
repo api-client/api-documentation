@@ -96,4 +96,10 @@ export default css`
 .deprecated-message .message {
   margin-left: 12px;
 }
+
+.empty-info {
+  font-size: 1.1rem;
+  margin-left: 24px;
+  padding: 12px 0;
+}
 `;
