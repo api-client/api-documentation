@@ -3,7 +3,7 @@
 /* eslint-disable class-methods-use-this */
 import { html } from 'lit-element';
 import { dedupeMixin } from '@open-wc/dedupe-mixin';
-import { ns } from '@api-client/amf-store';
+import { ns } from '@api-client/amf-store/worker.index.js';
 import '@advanced-rest-client/highlight/arc-marked.js';
 import '@anypoint-web-components/anypoint-button/anypoint-icon-button.js';
 import '@advanced-rest-client/arc-icons/arc-icon.js';
@@ -96,7 +96,8 @@ const mxFunction = (base) => {
       if (!restored) {
         return;
       }
-      const params = this[parametersValue].filter(i => i.binding === binding);
+      const list = /** @type OperationParameter[] */ (this[parametersValue]);
+      const params = list.filter(i => i.binding === binding);
       if (!params) {
         return;
       }
@@ -109,7 +110,7 @@ const mxFunction = (base) => {
     }
 
     [clearCustom]() {
-      const params = this[parametersValue];
+      const params = /** @type OperationParameter[] */ (this[parametersValue]);
       (params || []).forEach((param) => {
         InputCache.set(this, param.paramId, '', this.globalCache)
       });
@@ -119,13 +120,26 @@ const mxFunction = (base) => {
      * @returns {RamlCustomAuthorization}
      */
     [serializeCustom]() {
-      const params = this[parametersValue];
+      const params = /** @type OperationParameter[] */ (this[parametersValue]);
       const result = /** @type RamlCustomAuthorization */ ({});
       (params || []).forEach((param) => {
         if (!result[param.binding]) {
           result[param.binding] = {};
         }
-        result[param.binding][param.parameter.name] = InputCache.get(this, param.paramId, this.globalCache);
+        let value = InputCache.get(this, param.paramId, this.globalCache);
+        if (value === '' || value === undefined) {
+          if (param.parameter.required === false) {
+            return;
+          }
+          value = '';
+        }
+        if (value === false && param.parameter.required === false) {
+          return;
+        }
+        if (value === null) {
+          value = '';
+        }
+        result[param.binding][param.parameter.name] = value;
       });
       return /** @type RamlCustomAuthorization */ (result);
     }
@@ -135,7 +149,7 @@ const mxFunction = (base) => {
      */
     [validateCustom]() {
       const nils = this[nilValues];
-      const params = this[parametersValue];
+      const params = /** @type OperationParameter[] */ (this[parametersValue]);
       return !params.some((param) => {
         if (nils.includes(param.paramId)) {
           return false;
@@ -152,7 +166,8 @@ const mxFunction = (base) => {
       const source = 'settings';
       this.schemeName = undefined;
       this.schemeDescription = undefined;
-      this[parametersValue] = this[parametersValue].filter(item => item.source !== source);
+      const list = /** @type OperationParameter[] */ (this[parametersValue]);
+      this[parametersValue] = list.filter(item => item.source !== source);
       const info = /** @type ApiParametrizedSecuritySchemeRecursive */ (this.security);
       if (!info) {
         return;
@@ -208,6 +223,7 @@ const mxFunction = (base) => {
             parameter: constructed,
             source,
             schemaId: property.id,
+            // @ts-ignore
             schema: property,
           });
         })

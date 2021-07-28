@@ -10,4 +10,5 @@ export { default as AmfAuthorizationEditorElement } from './src/elements/AmfAuth
 export { default as AmfAuthorizationMethodElement } from './src/elements/AmfAuthorizationMethodElement';
 export { ApiExampleGenerator } from './src/lib/ApiExampleGenerator';
 export { ShapeExampleGenerator } from './src/generators/ShapeExampleGenerator';
+export { AuthorizationPreProcessor } from './src/lib/AuthorizationPreProcessor.js';
 export * as Utils from './src/lib/Utils';

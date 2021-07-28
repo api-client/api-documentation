@@ -8,7 +8,7 @@
 /** @typedef {import('@api-client/amf-store').ApiScalarShape} ApiScalarShape */
 /** @typedef {import('@api-client/amf-store').ApiShape} ApiShape */
 
-import { ns } from '@api-client/amf-store';
+import { ns } from '@api-client/amf-store/worker.index.js';
 
 /**
  * Computes a data model for custom definition for the OAuth 2 scheme

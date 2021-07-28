@@ -176,7 +176,19 @@ export default class AmfHttpRequestElement extends AmfParameterMixin(AmfEditorsB
        * OAuth2 redirect URI.
        * This value **must** be set in order for OAuth 1/2 to work properly.
        */
-      redirectUri: { type: String },
+      oauth2RedirectUri: { type: String },
+      /** 
+       * When set it overrides the `authorizationUri` in the authorization editor,
+       * regardless to the authorization scheme applied to the request.
+       * This is to be used with the mocking service.
+       */
+      oauth2AuthorizationUri: { type: String },
+      /** 
+       * When set it overrides the `authorizationUri` in the authorization editor,
+       * regardless to the authorization scheme applied to the request.
+       * This is to be used with the mocking service.
+       */
+      oauth2AccessTokenUri: { type: String },
       /**
        * List of credentials source
        */
@@ -197,7 +209,11 @@ export default class AmfHttpRequestElement extends AmfParameterMixin(AmfEditorsB
     /** @type number */
     this[selectedSecurity] = undefined;
     /** @type string */
-    this.redirectUri = undefined;
+    this.oauth2RedirectUri = undefined;
+    /** @type string */
+    this.oauth2AuthorizationUri = undefined;
+    /** @type string */
+    this.oauth2AccessTokenUri = undefined;
     /** @type any[] */
     this.credentialsSource = undefined;
     
@@ -953,12 +969,14 @@ export default class AmfHttpRequestElement extends AmfParameterMixin(AmfEditorsB
     const selected = this[selectedSecurity] || 0;
     const rendered = security[selected];
     return html`
-    <section class="authorization">
+    <section class="authorization params-section">
       ${security.length > 1 ? this[authorizationSelectorTemplate](security, selected) : ''}
       <amf-authorization-editor 
         .domainId="${rendered.security.id}" 
         .anypoint="${this.anypoint}"
-        .redirectUri="${this.redirectUri}"
+        .oauth2RedirectUri="${this.oauth2RedirectUri}"
+        .oauth2AuthorizationUri="${this.oauth2AuthorizationUri}"
+        .oauth2AccessTokenUri="${this.oauth2AccessTokenUri}"
         .credentialsSource="${this.credentialsSource}"></amf-authorization-editor>
     </section>
     `;

@@ -1,5 +1,5 @@
 /* eslint-disable class-methods-use-this */
-import { ns } from '@api-client/amf-store';
+import { ns } from '@api-client/amf-store/worker.index.js';
 import { 
   ShapeExampleGeneratorBase,
   scalarShapeObject,

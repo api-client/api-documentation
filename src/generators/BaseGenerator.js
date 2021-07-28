@@ -1,4 +1,4 @@
-import { ns } from '@api-client/amf-store';
+import { ns } from '@api-client/amf-store/worker.index.js';
 
 /** @typedef {import('@api-client/amf-store').ApiObjectNode} ApiObjectNode */
 /** @typedef {import('@api-client/amf-store').ApiArrayNode} ApiArrayNode */

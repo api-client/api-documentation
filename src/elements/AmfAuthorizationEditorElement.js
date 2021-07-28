@@ -42,10 +42,6 @@ export default class AmfAuthorizationEditorElement extends AmfEditorsBase {
 
   static get properties() {
     return {
-      /**
-       * Redirect URL for the OAuth2 authorization.
-       */
-      redirectUri: { type: String },
       // Current HTTP method. Passed by digest method.
       httpMethod: { type: String },
       // Current request URL. Passed by digest method.
@@ -61,6 +57,22 @@ export default class AmfAuthorizationEditorElement extends AmfEditorsBase {
        * List of credentials source
        */
       credentialsSource: { type: Array },
+      /**
+       * Redirect URL for the OAuth2 authorization.
+       */
+      oauth2RedirectUri: { type: String },
+      /** 
+       * When set it overrides the `authorizationUri` in the authorization editor,
+       * regardless to the authorization scheme applied to the request.
+       * This is to be used with the mocking service.
+       */
+      oauth2AuthorizationUri: { type: String },
+      /** 
+       * When set it overrides the `authorizationUri` in the authorization editor,
+       * regardless to the authorization scheme applied to the request.
+       * This is to be used with the mocking service.
+       */
+      oauth2AccessTokenUri: { type: String },
     };
   }
 
@@ -69,7 +81,11 @@ export default class AmfAuthorizationEditorElement extends AmfEditorsBase {
     /** @type ApiSecurityRequirementRecursive */
     this[securityValue] = undefined;
     /** @type string */
-    this.redirectUri = undefined;
+    this.oauth2RedirectUri = undefined;
+    /** @type string */
+    this.oauth2AuthorizationUri = undefined;
+    /** @type string */
+    this.oauth2AccessTokenUri = undefined;
     /** @type string */
     this.httpMethod = undefined;
     /** @type string */
@@ -430,13 +446,13 @@ export default class AmfAuthorizationEditorElement extends AmfEditorsBase {
    * @return {TemplateResult}
    */
   [oa1AuthTemplate](security, renderTitle) {
-    const { anypoint, redirectUri } = this;
+    const { anypoint, oauth2RedirectUri } = this;
     return html`
     ${renderTitle ? this[methodTitleTemplate](security) : ''}
     <amf-authorization-method
       ?compatibility="${anypoint}"
       type="oauth 1"
-      .redirectUri="${redirectUri}"
+      .redirectUri="${oauth2RedirectUri}"
       .security="${security}"
       @change="${this[changeHandler]}"
     ></amf-authorization-method>`;
@@ -451,15 +467,19 @@ export default class AmfAuthorizationEditorElement extends AmfEditorsBase {
   [oa2AuthTemplate](security) {
     const {
       anypoint,
-      redirectUri,
-      credentialsSource
+      oauth2RedirectUri,
+      credentialsSource,
+      oauth2AuthorizationUri,
+      oauth2AccessTokenUri,
     } = this;
     return html`
     ${this[methodTitleTemplate](security)}
     <amf-authorization-method
       ?compatibility="${anypoint}"
       type="oauth 2"
-      .redirectUri="${redirectUri}"
+      .redirectUri="${oauth2RedirectUri}"
+      .overrideAuthorizationUri="${oauth2AuthorizationUri}"
+      .overrideAccessTokenUri="${oauth2AccessTokenUri}"
       .security="${security}"
       .credentialsSource="${credentialsSource}"
       @change="${this[changeHandler]}"

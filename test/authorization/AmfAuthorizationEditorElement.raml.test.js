@@ -24,7 +24,7 @@ describe('AmfAuthorizationEditorElement RAML tests', () => {
   async function basicFixture(domainId) {
     const element = /** @type AmfAuthorizationEditorElement */ (await fixture(html`<amf-authorization-editor
       .domainId="${domainId}"
-      redirectUri="https://api.rdr.com"
+      oauth2RedirectUri="https://api.rdr.com"
     ></amf-authorization-editor>`));
     await oneEvent(element, 'ready');
     return element;
@@ -385,7 +385,7 @@ describe('AmfAuthorizationEditorElement RAML tests', () => {
         });
 
         it('produces authorization settings', async () => {
-          element.redirectUri = 'https://rdr.com';
+          element.oauth2RedirectUri = 'https://rdr.com';
           const form = element.shadowRoot.querySelector('amf-authorization-method');
           form.clientId = 'test-client-id';
           form.accessToken = 'test-token';
@@ -408,7 +408,7 @@ describe('AmfAuthorizationEditorElement RAML tests', () => {
           assert.equal(settings.deliveryMethod, 'header', 'deliveryMethod is set');
           assert.equal(settings.deliveryName, 'Authorization', 'deliveryName is set');
           assert.equal(settings.authorizationUri, 'https://auth.com', 'authorizationUri is set');
-          assert.equal(settings.redirectUri, element.redirectUri, 'redirectUri is set');
+          assert.equal(settings.redirectUri, element.oauth2RedirectUri, 'redirectUri is set');
         });
       });
 

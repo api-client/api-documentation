@@ -7,7 +7,7 @@
 /** @typedef {import('@api-client/amf-store').ApiScalarNode} ApiScalarNode */
 /** @typedef {import('@api-client/amf-store').ApiArrayShape} ApiArrayShape */
 
-import { ns } from '@api-client/amf-store';
+import { ns } from '@api-client/amf-store/worker.index.js';
 
 /**
  * A class to generate JSON schema from an ApiShapeUnion declaration.

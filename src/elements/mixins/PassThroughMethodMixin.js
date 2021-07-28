@@ -7,7 +7,7 @@ import '@advanced-rest-client/highlight/arc-marked.js';
 import '@anypoint-web-components/anypoint-button/anypoint-icon-button.js';
 import '@advanced-rest-client/arc-icons/arc-icon.js';
 import { notifyChange } from '@advanced-rest-client/authorization/src/Utils.js';
-import { ns } from '@api-client/amf-store';
+import { ns } from '@api-client/amf-store/worker.index.js';
 import { AmfParameterMixin, parametersValue, nilValues, parameterTemplate } from './AmfParameterMixin.js';
 import * as InputCache from '../../lib/InputCache.js';
 
@@ -128,7 +128,20 @@ const mxFunction = (base) => {
         if (!result[param.binding]) {
           result[param.binding] = {};
         }
-        result[param.binding][param.parameter.name] = InputCache.get(this, param.paramId, this.globalCache);
+        let value = InputCache.get(this, param.paramId, this.globalCache);
+        if (value === '' || value === undefined) {
+          if (param.parameter.required === false) {
+            return;
+          }
+          value = '';
+        }
+        if (value === false && param.parameter.required === false) {
+          return;
+        }
+        if (value === null) {
+          value = '';
+        }
+        result[param.binding][param.parameter.name] = value;
       });
       return result;
     }

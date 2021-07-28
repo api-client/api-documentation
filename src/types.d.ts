@@ -45,3 +45,15 @@ export interface SecuritySelectorListItem {
   labels: string[];
   security: ApiSecurityRequirementRecursive;
 }
+
+export interface AuthPreProcessorOptions {
+  /**
+   * When set it removes authorization scheme from the request that has been applied to the request
+   * leaving all that hasn't been processed.
+   */
+  removeProcessed?: boolean;
+  /**
+   * When set it processes authorization schemes that are reported to be invalid.
+   */
+  processInvalid?: boolean;
+}

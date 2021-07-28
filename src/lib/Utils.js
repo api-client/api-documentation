@@ -1,4 +1,4 @@
-import { ns } from '@api-client/amf-store';
+import { ns } from '@api-client/amf-store/worker.index.js';
 import { HeadersParser } from '@advanced-rest-client/arc-headers';
 
 /** @typedef {import('@api-client/amf-store').ApiShapeUnion} ApiShapeUnion */

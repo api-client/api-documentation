@@ -1,5 +1,5 @@
 import { html } from "lit-element";
-import { ns } from '@api-client/amf-store';
+import { ns } from '@api-client/amf-store/worker.index.js';
 import { classMap } from "lit-html/directives/class-map";
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */

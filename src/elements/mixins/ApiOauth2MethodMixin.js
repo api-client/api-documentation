@@ -10,7 +10,7 @@ import {
   serializeOauth2Auth,
   oauth2CustomPropertiesTemplate,
 } from '@advanced-rest-client/authorization/src/Oauth2MethodMixin.js';
-import { ns } from '@api-client/amf-store';
+import { ns } from '@api-client/amf-store/worker.index.js';
 import { Oauth2RamlCustomData } from '../../lib/Oauth2RamlCustomData.js';
 import { AmfParameterMixin, parametersValue, nilValues, parameterTemplate } from './AmfParameterMixin.js';
 import { AmfInputParser } from '../../lib/AmfInputParser.js';
@@ -82,6 +82,10 @@ const mxFunction = (base) => {
       super();
       /** @type ApiParametrizedSecuritySchemeRecursive */
       this.security = undefined;
+      /** @type string */
+      this.overrideAuthorizationUri = undefined;
+      /** @type string */
+      this.overrideAccessTokenUri = undefined;
     }
 
     [initializeOauth2Model]() {
@@ -300,8 +304,8 @@ const mxFunction = (base) => {
       }
 
       const [flow] = flows;
-      this.authorizationUri = flow.authorizationUri;
-      this.accessTokenUri = flow.accessTokenUri || '';
+      this.authorizationUri = this.overrideAuthorizationUri || flow.authorizationUri;
+      this.accessTokenUri = this.overrideAccessTokenUri || flow.accessTokenUri || '';
       this.scopes = (flow.scopes || []).map(s => s.name);
       const settingsExtension = this[findOauth2CustomSettings](model);
       const grants = this[computeGrants](authorizationGrants, settingsExtension);
@@ -503,8 +507,8 @@ const mxFunction = (base) => {
       const flow = flows.find(team => team.flow === name);
       // sets basic oauth properties.
       this.scopes = flow ? this[readFlowScopes](flow) : [];
-      this.authorizationUri = flow.authorizationUri || '';
-      this.accessTokenUri = flow.accessTokenUri || '';
+      this.authorizationUri = this.overrideAuthorizationUri || flow.authorizationUri || '';
+      this.accessTokenUri = this.overrideAccessTokenUri || flow.accessTokenUri || '';
     }
 
     /**

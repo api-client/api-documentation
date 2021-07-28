@@ -75,7 +75,21 @@ export default class AmfAuthorizationMethodElement extends ApiOauth2MethodMixin(
       /**
        * When set the "description" of the security definition is rendered.
        */
-      descriptionOpened: { type: Boolean }
+      descriptionOpened: { type: Boolean },
+      /**
+       * Used by the OAuth 2 type. 
+       * When set it overrides the `authorizationUri` in the authorization editor,
+       * regardless to the authorization scheme applied to the request.
+       * This is to be used with the mocking service.
+       */
+      overrideAuthorizationUri: { type: String },
+      /** 
+       * Used by the OAuth 2 type. 
+       * When set it overrides the `authorizationUri` in the authorization editor,
+       * regardless to the authorization scheme applied to the request.
+       * This is to be used with the mocking service.
+       */
+      overrideAccessTokenUri: { type: String },
     };
   }
 

@@ -38,7 +38,21 @@ export default class AmfAuthorizationEditorElement extends AmfEditorsBase {
    * Redirect URL for the OAuth2 authorization.
    * @attribute
    */
-  redirectUri: string;
+  oauth2RedirectUri: string;
+  /** 
+   * When set it overrides the `authorizationUri` in the authorization editor,
+   * regardless to the authorization scheme applied to the request.
+   * This is to be used with the mocking service.
+   * @attribute
+   */
+  oauth2AuthorizationUri: string;
+  /** 
+   * When set it overrides the `authorizationUri` in the authorization editor,
+   * regardless to the authorization scheme applied to the request.
+   * This is to be used with the mocking service.
+   * @attribute
+   */
+  oauth2AccessTokenUri: string;
   // Current HTTP method. Passed by digest method.
   httpMethod: string;
   // Current request URL. Passed by digest method.

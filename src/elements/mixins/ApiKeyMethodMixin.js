@@ -132,7 +132,20 @@ const mxFunction = (base) => {
         if (!result[param.binding]) {
           result[param.binding] = {};
         }
-        result[param.binding][param.parameter.name] = InputCache.get(this, param.paramId, this.globalCache);
+        let value = InputCache.get(this, param.paramId, this.globalCache);
+        if (value === '' || value === undefined) {
+          if (param.parameter.required === false) {
+            return;
+          }
+          value = '';
+        }
+        if (value === false && param.parameter.required === false) {
+          return;
+        }
+        if (value === null) {
+          value = '';
+        }
+        result[param.binding][param.parameter.name] = value;
       });
       return /** @type ApiKeyAuthorization */ (result);
     }

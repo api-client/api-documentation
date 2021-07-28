@@ -1,7 +1,7 @@
 /* eslint-disable max-classes-per-file */
 /* eslint-disable no-unused-vars */
 /* eslint-disable class-methods-use-this */
-import { ns } from '@api-client/amf-store';
+import { ns } from '@api-client/amf-store/worker.index.js';
 import { ShapeJsonExampleGenerator } from './ShapeJsonExampleGenerator.js';
 import { ShapeXmlExampleGenerator } from './ShapeXmlExampleGenerator.js';
 

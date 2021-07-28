@@ -1,6 +1,6 @@
 /* eslint-disable class-methods-use-this */
 
-import { ns } from "@api-client/amf-store";
+import { ns } from "@api-client/amf-store/worker.index.js";
 import { AmfInputParser } from "./AmfInputParser.js";
 /** @typedef {import('@api-client/amf-store').ApiShapeUnion} ApiShapeUnion */
 /** @typedef {import('@api-client/amf-store').ApiScalarShape} ApiScalarShape */

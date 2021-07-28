@@ -12,6 +12,7 @@ import '@advanced-rest-client/authorization/oauth2-authorization.js';
 import '@advanced-rest-client/authorization/oauth1-authorization.js';
 import { IdbAmfStoreService } from './lib/IdbAmfStoreService.js';
 import '../amf-http-request.js';
+import { AuthorizationPreProcessor } from '../src/lib/AuthorizationPreProcessor.js';
 
 /** @typedef {import('@api-client/graph-project').APIGraphNavigationEvent} APIGraphNavigationEvent */
 /** @typedef {import('@api-client/graph-project').APIExternalNavigationEvent} APIExternalNavigationEvent */
@@ -36,6 +37,9 @@ class ComponentPage extends DemoPage {
     this.componentName = 'amf-http-request';
     // this.oauth2redirect = 'http://auth.advancedrestclient.com/arc.html';
     this.oauth2redirect = `${window.location.origin}/node_modules/@advanced-rest-client/authorization/oauth-popup.html`;
+    this.oauth2AuthorizationUri = `${window.location.origin}/demo/oauth-authorize.html`;
+    // this.oauth2AuthorizationUri = `${window.location.origin}/auth/authorize`;
+    this.oauth2AccessTokenUri = `${window.location.origin}/auth/token`;
     this.actionHandler = this.actionHandler.bind(this);
     window.addEventListener(NavigationEventTypes.navigate, this.navigationHandler.bind(this));
     window.addEventListener(NavigationEventTypes.navigateExternal, this.externalNavigationHandler.bind(this));
@@ -78,7 +82,9 @@ class ComponentPage extends DemoPage {
    * @param {CustomEvent} e
    */
   transportHandler(e) {
-    console.log(e.detail);
+    const authFactory = new AuthorizationPreProcessor();
+    const request = authFactory.apply(e.detail.request, { removeProcessed: true, processInvalid: true });
+    console.log(request);
   }
 
   /**
@@ -268,7 +274,7 @@ class ComponentPage extends DemoPage {
   }
 
   _componentTemplate() {
-    const { demoStates, darkThemeActive, selectedId, globalCache, oauth2redirect } = this;
+    const { demoStates, darkThemeActive, selectedId, globalCache, oauth2redirect, oauth2AuthorizationUri, oauth2AccessTokenUri } = this;
     if (!selectedId) {
       return html`<p>Select API operation in the navigation</p>`;
     }
@@ -281,7 +287,9 @@ class ComponentPage extends DemoPage {
       <amf-http-request
         .domainId="${selectedId}"
         ?globalCache="${globalCache}"
-        .redirectUri="${oauth2redirect}"
+        .oauth2RedirectUri="${oauth2redirect}"
+        .oauth2AuthorizationUri="${oauth2AuthorizationUri}"
+        .oauth2AccessTokenUri="${oauth2AccessTokenUri}"
         slot="content"
       >
       </amf-http-request>

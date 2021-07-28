@@ -32,6 +32,21 @@ export default class AmfAuthorizationMethodElement extends PassThroughMethodMixi
    */
   descriptionOpened: boolean;
 
+  /** 
+   * When set it overrides the `authorizationUri` in the authorization editor,
+   * regardless to the authorization scheme applied to the request.
+   * This is to be used with the mocking service.
+   * @attribute
+   */
+  overrideAuthorizationUri: string;
+  /** 
+   * When set it overrides the `authorizationUri` in the authorization editor,
+   * regardless to the authorization scheme applied to the request.
+   * This is to be used with the mocking service.
+   * @attribute
+   */
+  overrideAccessTokenUri: string;
+  
   constructor();
   connectedCallback(): void;
   render(): any;

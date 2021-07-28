@@ -3,7 +3,7 @@
 // eslint-disable-next-line no-unused-vars
 import { LitElement, html } from 'lit-element';
 import { dedupeMixin } from '@open-wc/dedupe-mixin';
-import { ns } from '@api-client/amf-store';
+import { ns } from '@api-client/amf-store/worker.index.js';
 import { notifyChange, } from '@advanced-rest-client/authorization/src/Utils.js';
 import '@anypoint-web-components/anypoint-dropdown-menu/anypoint-dropdown-menu.js';
 import '@anypoint-web-components/anypoint-listbox/anypoint-listbox.js';

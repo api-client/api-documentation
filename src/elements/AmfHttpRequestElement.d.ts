@@ -70,7 +70,19 @@ export default class AmfHttpRequestElement extends AmfParameterMixin(AmfEditorsB
   * OAuth2 redirect URI.
   * This value **must** be set in order for OAuth 1/2 to work properly.
   */
-  redirectUri: string;
+  oauth2RedirectUri: string;
+  /** 
+   * When set it overrides the `authorizationUri` in the authorization editor,
+   * regardless to the authorization scheme applied to the request.
+   * This is to be used with the mocking service.
+   */
+  oauth2AuthorizationUri: string;
+  /** 
+   * When set it overrides the `authorizationUri` in the authorization editor,
+   * regardless to the authorization scheme applied to the request.
+   * This is to be used with the mocking service.
+   */
+  oauth2AccessTokenUri: string;
   /**
   * List of credentials source
   */
