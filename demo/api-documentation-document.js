@@ -39,7 +39,7 @@ class ComponentPage extends DemoPage {
 
   async autoLoad() {
     await this.initStore();
-    await this.loadDemoApi('demo-api.json');
+    await this.loadDemoApi('demo-api.json', 'RAML 1.0');
   }
 
   async firstRender() {
@@ -73,17 +73,17 @@ class ComponentPage extends DemoPage {
     const button = /** @type HTMLButtonElement */ (e.target);
     switch (button.id) {
       case 'init': this.initStore(); break;
-      case 'loadApiGraph': this.loadDemoApi(button.dataset.src); break;
+      case 'loadApiGraph': this.loadDemoApi(button.dataset.src, button.dataset.vendor); break;
       case 'createWebApi': this.createWebApi(); break;
       default: console.warn(`Unhandled action ${button.id}`);
     }
   }
 
-  async loadDemoApi(file) {
+  async loadDemoApi(file, vendor) {
     this.loaded = false;
     const rsp = await fetch(`./${file}`);
     const model = await rsp.text();
-    await this.store.loadGraph(model);
+    await this.store.loadGraph(model, vendor);
     const api = await this.store.getApi();
     this.apiId = api.id;
     this.loaded = true;
@@ -123,8 +123,8 @@ class ComponentPage extends DemoPage {
   contentTemplate() {
     return html`
       <h2>API documentation</h2>
-      ${this._demoTemplate()}
       ${this._dataTemplate()}
+      ${this._demoTemplate()}
     `;
   }
 
@@ -149,7 +149,7 @@ class ComponentPage extends DemoPage {
     const { apiId } = this;
     return html`
     <graph-api-navigation
-      endpointsOpened
+      documentationsOpened
       .apiId="${apiId}"
       summary
       sort
@@ -200,15 +200,40 @@ class ComponentPage extends DemoPage {
       <h4>Initialization</h4>
       <div @click="${this.actionHandler}">
         <button id="init">Init</button>
-        <button id="loadApiGraph" data-src="demo-api.json" ?disabled="${!initialized}">Load demo API</button>
-        <button id="loadApiGraph" data-src="async-api.json" ?disabled="${!initialized}">Load async API</button>
-        <button id="loadApiGraph" data-src="google-drive-api.json" ?disabled="${!initialized}">Load Google Drive API</button>
-        <button id="loadApiGraph" data-src="streetlights.json" ?disabled="${!initialized}">Streetlights (async) API</button>
-        <button id="loadApiGraph" data-src="oas-3-api.json" ?disabled="${!initialized}">OAS 3</button>
-        <button id="loadApiGraph" data-src="petstore.json" ?disabled="${!initialized}">Pet store (OAS 3)</button>
         <button id="createWebApi" ?disabled="${!initialized}">Create empty Web API</button>
+        <button ?disabled="${!initialized}" id="selectApiDirectory">Select API</button>
       </div>
+      ${this.apisListTemplate()}
     </section>
+    `;
+  }
+
+  apisListTemplate() {
+    const apis = [
+      ['demo-api.json', 'RAML 1.0', 'Demo API'],
+      ['async-api.json', 'ASYNC 2.0', 'ASYNC API'],
+      ['google-drive-api.json', 'RAML 1.0', 'Google Drive API'],
+      ['streetlights.json', 'ASYNC 2.0', 'Streetlights (async) API'],
+      ['oas-3-api.json', 'OAS 3.0', 'OAS 3.0'],
+      ['petstore.json', 'OAS 3.0', 'Pet store (OAS 3)'],
+      ['oas-bearer.json', 'OAS 3.0', 'OAS Bearer'],
+      ['oauth-flows.json', 'OAS 3.0', 'OAuth flows'],
+      ['oauth-pkce.json', 'RAML 1.0', 'OAuth PKCE'],
+      ['secured-api.json', 'RAML 1.0', 'Secured api'],
+      ['secured-unions.json', 'ASYNC 2.0', 'Secured unions'],
+      ['api-keys.json', 'OAS 3.0', 'API keys'],
+    ];
+    const { initialized } = this;
+    return html`
+    <h4>APIs</h4>
+    <div @click="${this.actionHandler}">
+    ${apis.map(([file, vendor, label]) => html`
+      <button id="loadApiGraph" 
+        data-src="${file}" 
+        data-vendor="${vendor}" 
+        ?disabled="${!initialized}"
+      >${label}</button>`)}
+    </div>
     `;
   }
 }
