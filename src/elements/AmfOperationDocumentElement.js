@@ -1,17 +1,30 @@
 /* eslint-disable class-methods-use-this */
 import { html } from 'lit-element';
-import { StoreEvents, StoreEventTypes } from '@api-client/amf-store';
+import { classMap } from 'lit-html/directives/class-map.js';
+import { ifDefined } from 'lit-html/directives/if-defined.js';
+import { StoreEvents, StoreEventTypes } from '@api-client/amf-store/worker.index.js';
 import { Styles as HttpStyles } from '@api-components/http-method-label';
 import { TelemetryEvents, ReportingEvents } from '@api-client/graph-project';
-import markdownStyles from '@advanced-rest-client/markdown-styles/markdown-styles.js';
-import '@advanced-rest-client/arc-marked/arc-marked.js';
+import { MarkdownStyles } from '@advanced-rest-client/highlight';
+import '@advanced-rest-client/highlight/arc-marked.js';
 import '@anypoint-web-components/anypoint-tabs/anypoint-tab.js';
 import '@anypoint-web-components/anypoint-tabs/anypoint-tabs.js';
+import '@advanced-rest-client/arc-icons/arc-icon.js';
 import elementStyles from './styles/ApiOperation.js';
 import commonStyles from './styles/Common.js';
-import '../../amf-request-document.js'
-import '../../amf-response-document.js'
-import { AmfDocumentationBase, paramsSectionTemplate } from './AmfDocumentationBase.js';
+import '../../amf-request-document.js';
+import '../../amf-response-document.js';
+import '../../amf-security-requirement-document.js';
+import { 
+  AmfDocumentationBase, 
+  paramsSectionTemplate,
+  queryingValue,
+} from './AmfDocumentationBase.js';
+import { 
+  tablePropertyTemplate,
+} from './SchemaCommonTemplates.js';
+import schemaStyles from './styles/SchemaCommon.js';
+import { DescriptionEditMixin, updateDescription, descriptionTemplate } from './mixins/DescriptionEditMixin.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiEndPoint} ApiEndPoint */
@@ -23,8 +36,6 @@ import { AmfDocumentationBase, paramsSectionTemplate } from './AmfDocumentationB
 /** @typedef {import('@api-client/amf-store').ApiStoreStateDeleteEvent} ApiStoreStateDeleteEvent */
 /** @typedef {import('@anypoint-web-components/anypoint-tabs').AnypointTabs} AnypointTabs */
 
-export const operationIdValue = Symbol('operationIdValue');
-export const queryingValue = Symbol('queryingValue');
 export const queryEndpoint = Symbol('queryEndpoint');
 export const queryOperation = Symbol('queryOperation');
 export const queryServers = Symbol('queryServers');
@@ -38,7 +49,6 @@ export const responsesValue = Symbol('responsesValue');
 export const computeUrlValue = Symbol('computeUrlValue');
 export const preselectResponse = Symbol('preselectResponse');
 export const titleTemplate = Symbol('titleTemplate');
-export const descriptionTemplate = Symbol('descriptionTemplate');
 export const urlTemplate = Symbol('urlTemplate');
 export const requestTemplate = Symbol('requestTemplate');
 export const responseTemplate = Symbol('responseTemplate');
@@ -50,43 +60,17 @@ export const serverCreatedHandler = Symbol('serverCreatedHandler');
 export const serverUpdatedHandler = Symbol('serverUpdatedHandler');
 export const serverDeletedHandler = Symbol('serverDeletedHandler');
 export const statusCodeHandler = Symbol('statusCodeHandler');
+export const securitySectionTemplate = Symbol('securitySectionTemplate');
+export const deprecatedTemplate = Symbol('deprecatedTemplate');
+export const metaDataTemplate = Symbol('metaDataTemplate');
 
 /**
  * A web component that renders the documentation page for an API operation built from 
  * the AMF graph model.
  */
-export default class AmfOperationDocumentElement extends AmfDocumentationBase {
+export default class AmfOperationDocumentElement extends DescriptionEditMixin(AmfDocumentationBase) {
   static get styles() {
-    return [elementStyles, commonStyles, HttpStyles.default, markdownStyles];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the operation to render.
-   */
-  get operationId() {
-    return this[operationIdValue];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the operation to render.
-   */
-  set operationId(value) {
-    const old = this[operationIdValue];
-    if (old === value) {
-      return;
-    }
-    this[operationIdValue] = value;
-    this.requestUpdate('operationId', old);
-    if (value) {
-      setTimeout(() => this.queryGraph(value));
-    }
-  }
-
-  /** 
-   * @returns {boolean} When true then the element is currently querying for the graph data.
-   */
-  get querying() {
-    return this[queryingValue] || false;
+    return [elementStyles, commonStyles, HttpStyles.default, MarkdownStyles, schemaStyles];
   }
 
   get serverId() {
@@ -110,13 +94,13 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
        */
       serverId: { type: String, reflect: true },
       /** 
-       * The domain id of the operation to render.
-       */
-      operationId: { type: String, reflect: true },
-      /** 
        * When set it opens the response section
        */
       responsesOpened: { type: Boolean, reflect: true },
+      /** 
+       * When set it opens the security section
+       */
+      securityOpened: { type: Boolean, reflect: true },
       /** 
        * The selected status code in the responses section.
        */
@@ -152,19 +136,13 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
     this.selectedStatus = undefined;
 
     this.responsesOpened = false;
+    this.securityOpened = false;
 
     this[operationUpdatedHandler] = this[operationUpdatedHandler].bind(this);
     this[endpointUpdatedHandler] = this[endpointUpdatedHandler].bind(this);
     this[serverCreatedHandler] = this[serverCreatedHandler].bind(this);
     this[serverUpdatedHandler] = this[serverUpdatedHandler].bind(this);
     this[serverDeletedHandler] = this[serverDeletedHandler].bind(this);
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.operationId) {
-      this.queryGraph(this.operationId);
-    }
   }
 
   /**
@@ -193,17 +171,17 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
 
   /**
    * Queries the graph store for the API Operation data.
-   * @param {string} operationId The operation id to render the documentation for.
    * @returns {Promise<void>}
    */
-  async queryGraph(operationId) {
+  async queryGraph() {
     if (this.querying) {
       return;
     }
+    const { domainId } = this;
     this[queryingValue] = true;
-    await this[queryEndpoint](operationId);
+    await this[queryEndpoint](domainId);
     await this[queryServers]();
-    await this[queryOperation](operationId);
+    await this[queryOperation](domainId);
     await this[queryResponses]();
     this[preselectResponse]();
     this[queryingValue] = false;
@@ -342,7 +320,7 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
    */
   [operationUpdatedHandler](e) {
     const { graphId, item } = e.detail;
-    if (graphId !== this.operationId) {
+    if (graphId !== this.domainId) {
       return;
     }
     this[operationValue] = item;
@@ -421,16 +399,29 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
     this.selectedStatus = String(tabs.selected);
   }
 
+  /**
+   * Updates the description of the operation.
+   * @param {string} markdown The new markdown to set.
+   * @return {Promise<void>} 
+   */
+  async [updateDescription](markdown) {
+    await StoreEvents.Operation.update(this, this.domainId, 'description', markdown);
+    this[operationValue].description = markdown;
+  }
+
   render() {
     if (!this[operationValue]) {
       return html``;
     }
     return html`
     ${this[titleTemplate]()}
-    ${this[descriptionTemplate]()}
+    ${this[deprecatedTemplate]()}
+    ${this[descriptionTemplate](this[operationValue].description)}
+    ${this[metaDataTemplate]()}
     ${this[urlTemplate]()}
     ${this[requestTemplate]()}
     ${this[responseTemplate]()}
+    ${this[securitySectionTemplate]()}
     `;
   }
 
@@ -438,13 +429,18 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
    * @returns {TemplateResult} The template for the Operation title.
    */
   [titleTemplate]() {
+    const { edit } = this;
     const operation = this[operationValue];
-    const { name, method } = operation;
-    const label = name || method;
+    const { name, method, deprecated, summary } = operation;
+    const label = summary || name || method;
+    const labelClasses = {
+      label: true,
+      deprecated,
+    };
     return html`
     <div class="operation-header">
       <div class="operation-title">
-        <span class="label">${label}</span>
+        <span class="${classMap(labelClasses)}" contentEditable="${ifDefined(edit ? 'plaintext-only' : undefined)}">${label}</span>
       </div>
       <p class="sub-header">API operation</p>
     </div>
@@ -452,19 +448,37 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
   }
 
   /**
-   * @returns {TemplateResult|string} The template for the markdown description.
+   * @returns {TemplateResult[]|string} The template for the Operation meta information.
    */
-  [descriptionTemplate]() {
+  [metaDataTemplate]() {
     const operation = this[operationValue];
-    const { description } = operation;
-    if (!description) {
+    const { operationId, } = operation;
+    const result = [];
+    if (operationId) {
+      result.push(tablePropertyTemplate('Operation ID', operationId));
+    }
+
+    if (result.length) {
+      return result;
+    }
+    return '';
+  }
+
+  /**
+   * @returns {TemplateResult|string} The template for the deprecated message.
+   */
+  [deprecatedTemplate]() {
+    const operation = this[operationValue];
+    const { deprecated } = operation;
+    if (!deprecated) {
       return '';
     }
     return html`
-    <div class="api-description">
-      <arc-marked .markdown="${description}" sanitize>
-        <div slot="markdown-html" class="markdown-body"></div>
-      </arc-marked>
+    <div class="deprecated-message">
+      <arc-icon icon="warning"></arc-icon>
+      <span class="message">
+      This operation is marked as deprecated.
+      </span>
     </div>
     `;
   }
@@ -493,7 +507,12 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
       return '';
     }
     return html`
-    <amf-request-document .requestId="${operation.request}" payloadOpened headersOpened parametersOpened></amf-request-document>
+    <amf-request-document 
+      .domainId="${operation.request}" 
+      payloadOpened 
+      headersOpened 
+      parametersOpened
+      .edit="${this.edit}"></amf-request-document>
     `;
   }
 
@@ -542,7 +561,19 @@ export default class AmfOperationDocumentElement extends AmfDocumentationBase {
       return html`<div class="empty-info">Select a response to render the documentation.</div>`;
     }
     return html`
-    <amf-response-document .responseId="${response.id}" headersOpened payloadOpened></amf-response-document>
+    <amf-response-document .domainId="${response.id}" headersOpened payloadOpened .edit="${this.edit}"></amf-response-document>
     `;
+  }
+
+  /**
+   * @returns {TemplateResult|string} The template for the security list section.
+   */
+  [securitySectionTemplate]() {
+    const operation = this[operationValue];
+    if (!operation || !Array.isArray(operation.security) || !operation.security.length) {
+      return '';
+    }
+    const content = operation.security.map((id) => html`<amf-security-requirement-document .domainId="${id}" .edit="${this.edit}"></amf-security-requirement-document>`);
+    return this[paramsSectionTemplate]('Security', 'securityOpened', content);
   }
 }

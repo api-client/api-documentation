@@ -30,13 +30,8 @@ servers:
           - '8443'
           - '443'
         default: '8443'
-        example: '443'
       basePath:
         default: v2
-
-externalDocs:
-  description: ABout this API.
-  url: https://domain.com
 
 components:
   schemas:
@@ -46,13 +41,6 @@ components:
         code:
           type: integer
           format: int32
-          examples:
-            minimum:
-              value: 200
-              summary: The minimal code value
-            maximum:
-              value: 599
-              summary: The highest code value.
         message:
           type: string
     Category:
@@ -83,12 +71,11 @@ components:
           description: The title of the article, in CommonMark format.
           type: string
           minLength: 3
-      externalDocs:
-        description: Find more about this type
-        url: https://api.com
-      example:
-        id: "e1h2b3egvg46df5"
-        title: "My new article"
+        outdated:
+          description: This is no longer in use.
+          type: string
+          deprecated: true
+          writeOnly: true
   parameters:
     skipParam:
       name: skip
@@ -117,10 +104,6 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/GeneralError'
-          example:
-            code: 400
-            message: "Client error"
-            summary: A client request error
   securitySchemes:
     api_key:
       type: apiKey
@@ -134,6 +117,45 @@ components:
           scopes:
             write:pets: modify pets in your account
             read:pets: read your pets
+    
+    BasicAuth:
+      type: http
+      scheme: basic
+
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+    
+    OpenID:
+      type: openIdConnect
+      openIdConnectUrl: https://example.com/.well-known/openid-configuration
+    
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://example.com/oauth/authorize
+          tokenUrl: https://example.com/oauth/token
+          scopes:
+            read: Grants read access
+            write: Grants write access
+            admin: Grants access to admin operations
+
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+
+    queryAuth:
+      type: apiKey
+      in: query
+      name: api-key
 
 paths:
   /pets:
@@ -156,12 +178,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Category'
-                example:
-                  - id: 1
-                    name: Category 1
-                  - id: 2
-                    name: Category 2
-
   /default:
     description: A default path to the API
     get:
@@ -188,28 +204,11 @@ paths:
                     properties:
                       description:
                         type: string
-              examples:
-                Dinosaurs in the space:
-                  value:
-                    id: b2eb7b82-ad0f-11eb-8529-0242ac130003
-                    title: Dinosaurs in the space
-                  summary: A book about dinosaurs
-                Living on a prayer:
-                  value:
-                    id: b2eb7dc6-ad0f-11eb-8529-0242ac130003
-                    name: Living on a prayer
-                  summary: A book about praying
-            application/xml:
-              schema:
-                $ref: '#/components/schemas/Article'
-              examples:
-                xml:
-                  summary: A sample XML response
-                  value: '<objects><object><id>1</id><name>new</name></object><object><id>2</id></object></objects>'
-            text/html:
-              schema:
-                type: string
-              examples:
-                html:
-                  summary: A list containing two items
-                  value: '<html><body><ul><li>item 1</li><li>item 2</li></ul></body></html>'
+  /outdatedEndpoint:
+    description: This endpoint is no longer in use.
+    get:
+      deprecated: true
+      description: This operation is no longer in use.
+      responses:
+        '200':
+          description: Successful response

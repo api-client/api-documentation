@@ -317,6 +317,44 @@ paths:
             schema:
               type: string
               format: binary
+  /pet/listDogs:
+    get:
+      tags:
+        - pet
+      summary: List dogs only
+      description: An endpoint to list pets that are dogs.
+      operationId: listDogs
+      responses:
+        '200':
+          description: |
+            A response that returns a paginated object listing all dogs in the store.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Dog'
+  /pet/listCommon:
+    get:
+      tags:
+        - pet
+      summary: List common
+      description: An endpoint to list dogs, cats, and lizards.
+      operationId: listCommon
+      responses:
+        '200':
+          description: |
+            A response that returns a paginated object listing all common pets in the store.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  anyOf:
+                    - $ref: '#/components/schemas/Dog'
+                    - $ref: '#/components/schemas/Cat'
+                    - $ref: '#/components/schemas/Lizard'
+              
   /store/inventory:
     get:
       tags:
@@ -771,6 +809,10 @@ components:
             - available
             - pending
             - sold
+        petType:
+          type: string
+      discriminator:
+        propertyName: petType
       xml:
         name: pet
       type: object
@@ -786,6 +828,27 @@ components:
       xml:
         name: '##default'
       type: object
+    Cat:
+      allOf:
+      - $ref: '#/components/schemas/Pet'
+      - type: object
+        properties:
+          name:
+            type: string
+    Dog:
+      allOf:
+      - $ref: '#/components/schemas/Pet'
+      - type: object
+        properties:
+          bark:
+            type: string
+    Lizard:
+      allOf:
+      - $ref: '#/components/schemas/Pet'
+      - type: object
+        properties:
+          lovesRocks:
+            type: boolean
   requestBodies:
     Pet:
       content:

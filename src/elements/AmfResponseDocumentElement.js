@@ -1,17 +1,26 @@
 /* eslint-disable class-methods-use-this */
 import { html } from 'lit-element';
-import { StoreEvents, StoreEventTypes } from '@api-client/amf-store';
+import { StoreEvents, StoreEventTypes } from '@api-client/amf-store/worker.index.js';
 import { TelemetryEvents, ReportingEvents } from '@api-client/graph-project';
-import markdownStyles from '@advanced-rest-client/markdown-styles/markdown-styles.js';
-import '@advanced-rest-client/arc-marked/arc-marked.js';
+import { MarkdownStyles } from '@advanced-rest-client/highlight';
+import '@advanced-rest-client/highlight/arc-marked.js';
 import '@anypoint-web-components/anypoint-button/anypoint-button.js';
 import '@anypoint-web-components/anypoint-collapse/anypoint-collapse.js';
 import '@advanced-rest-client/arc-icons/arc-icon.js';
+import '@anypoint-web-components/anypoint-dropdown-menu/anypoint-dropdown-menu.js';
+import '@anypoint-web-components/anypoint-listbox/anypoint-listbox.js';
+import '@anypoint-web-components/anypoint-item/anypoint-item.js';
 import commonStyles from './styles/Common.js';
 import elementStyles from './styles/ApiResponse.js';
-import '../../amf-parameter-document.js';
 import '../../amf-payload-document.js';
-import { AmfDocumentationBase, paramsSectionTemplate, schemaItemTemplate } from './AmfDocumentationBase.js';
+import '../../amf-parameter-document.js';
+import { 
+  AmfDocumentationBase, 
+  paramsSectionTemplate, 
+  schemaItemTemplate,
+  queryingValue,
+} from './AmfDocumentationBase.js';
+import { DescriptionEditMixin, updateDescription, descriptionTemplate } from './mixins/DescriptionEditMixin.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiResponse} ApiResponse */
@@ -19,58 +28,27 @@ import { AmfDocumentationBase, paramsSectionTemplate, schemaItemTemplate } from 
 /** @typedef {import('@api-client/amf-store').ApiStoreStateUpdateEvent} ApiStoreStateUpdateEvent */
 /** @typedef {import('@api-client/amf-store').ApiStoreStateCreateEvent} ApiStoreStateCreateEvent */
 /** @typedef {import('@api-client/amf-store').ApiStoreStateDeleteEvent} ApiStoreStateDeleteEvent */
+/** @typedef {import('@anypoint-web-components/anypoint-listbox').AnypointListbox} AnypointListbox */
 
-export const responseIdValue = Symbol('responseIdValue');
-export const queryingValue = Symbol('queryingValue');
 export const queryResponse = Symbol('queryResponse');
 export const responseValue = Symbol('responseValue');
 export const queryPayloads = Symbol('queryPayloads');
 export const payloadsValue = Symbol('payloadsValue');
 export const payloadValue = Symbol('payloadValue');
-export const descriptionTemplate = Symbol('descriptionTemplate');
 export const headersTemplate = Symbol('headersTemplate');
 export const payloadTemplate = Symbol('payloadTemplate');
 export const payloadSelectorTemplate = Symbol('payloadSelectorTemplate');
 export const responseUpdatedHandler = Symbol('responseUpdatedHandler');
 export const payloadCreatedHandler = Symbol('payloadCreatedHandler');
 export const payloadDeletedHandler = Symbol('payloadDeletedHandler');
-export const mediaTypeBlurHandler = Symbol('mediaTypeChangeHandler');
+export const mediaTypeSelectHandler = Symbol('mediaTypeSelectHandler');
 
 /**
  * A web component that renders the documentation page for an API response object.
  */
-export default class AmfResponseDocumentElement extends AmfDocumentationBase {
+export default class AmfResponseDocumentElement extends DescriptionEditMixin(AmfDocumentationBase) {
   static get styles() {
-    return [commonStyles, elementStyles, markdownStyles];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the API response to render.
-   */
-  get responseId() {
-    return this[responseIdValue];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the API response to render.
-   */
-  set responseId(value) {
-    const old = this[responseIdValue];
-    if (old === value) {
-      return;
-    }
-    this[responseIdValue] = value;
-    this.requestUpdate('responseId', old);
-    if (value) {
-      setTimeout(() => this.queryGraph(value));
-    }
-  }
-
-  /** 
-   * @returns {boolean} When true then the element is currently querying for the graph data.
-   */
-  get querying() {
-    return this[queryingValue] || false;
+    return [commonStyles, elementStyles, MarkdownStyles];
   }
 
   /**
@@ -101,10 +79,6 @@ export default class AmfResponseDocumentElement extends AmfDocumentationBase {
 
   static get properties() {
     return {
-      /** 
-       * The domain id of the API response to render.
-       */
-      responseId: { type: String, reflect: true },
       /** 
        * When set it opens the headers section
        */
@@ -143,13 +117,6 @@ export default class AmfResponseDocumentElement extends AmfDocumentationBase {
     this[payloadDeletedHandler] = this[payloadDeletedHandler].bind(this);
   }
 
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.responseId) {
-      this.queryGraph(this.responseId);
-    }
-  }
-
   /**
    * @param {EventTarget} node
    */
@@ -172,15 +139,15 @@ export default class AmfResponseDocumentElement extends AmfDocumentationBase {
 
   /**
    * Queries the graph store for the API Response data.
-   * @param {string} responseId The domain id of the API response to render.
    * @returns {Promise<void>}
    */
-  async queryGraph(responseId) {
+  async queryGraph() {
     if (this.querying) {
       return;
     }
+    const { domainId } = this;
     this[queryingValue] = true;
-    await this[queryResponse](responseId);
+    await this[queryResponse](domainId);
     await this[queryPayloads]();
     this[queryingValue] = false;
     await this.requestUpdate();
@@ -222,7 +189,7 @@ export default class AmfResponseDocumentElement extends AmfDocumentationBase {
    */
   [responseUpdatedHandler](e) {
     const { graphId, item } = e.detail;
-    if (graphId !== this.responseId) {
+    if (graphId !== this.domainId) {
       return;
     }
     this[responseValue] = item;
@@ -234,7 +201,7 @@ export default class AmfResponseDocumentElement extends AmfDocumentationBase {
    */
   [payloadCreatedHandler](e) {
     const { item, domainParent } = e.detail;
-    if (domainParent !== this.responseId) {
+    if (domainParent !== this.domainId) {
       return;
     }
     if (!this[payloadsValue]) {
@@ -249,7 +216,7 @@ export default class AmfResponseDocumentElement extends AmfDocumentationBase {
    */
   [payloadDeletedHandler](e) {
     const { graphId, domainParent } = e.detail;
-    if (domainParent !== this.responseId) {
+    if (domainParent !== this.domainId) {
       return;
     }
     if (!this[payloadsValue]) {
@@ -265,10 +232,20 @@ export default class AmfResponseDocumentElement extends AmfDocumentationBase {
   /**
    * @param {Event} e
    */
-  [mediaTypeBlurHandler](e) {
-    const select = /** @type HTMLSelectElement */ (e.target);
-    const mime = select.value;
+  [mediaTypeSelectHandler](e) {
+    const select = /** @type AnypointListbox */ (e.target);
+    const mime = String(select.selected);
     this.mimeType = mime;
+  }
+
+  /**
+   * Updates the description of the response.
+   * @param {string} markdown The new markdown to set.
+   * @return {Promise<void>} 
+   */
+  async [updateDescription](markdown) {
+    await StoreEvents.Response.update(this, this.domainId, 'description', markdown);
+    this[responseValue].description = markdown;
   }
 
   render() {
@@ -276,27 +253,9 @@ export default class AmfResponseDocumentElement extends AmfDocumentationBase {
       return html``;
     }
     return html`
-    ${this[descriptionTemplate]()}
+    ${this[descriptionTemplate](this[responseValue].description)}
     ${this[headersTemplate]()}
     ${this[payloadTemplate]()}
-    `;
-  }
-
-  /**
-   * @returns {TemplateResult|string} The template for the markdown description.
-   */
-  [descriptionTemplate]() {
-    const response = this[responseValue];
-    const { description } = response;
-    if (!description) {
-      return '';
-    }
-    return html`
-    <div class="api-description">
-      <arc-marked .markdown="${description}" sanitize>
-        <div slot="markdown-html" class="markdown-body"></div>
-      </arc-marked>
-    </div>
     `;
   }
 
@@ -322,7 +281,7 @@ export default class AmfResponseDocumentElement extends AmfDocumentationBase {
     }
     const content = html`
     ${this[payloadSelectorTemplate]()}
-    <amf-payload-document .payloadId="${payload.id}"></amf-payload-document>
+    <amf-payload-document .domainId="${payload.id}" .edit="${this.edit}"></amf-payload-document>
     `;
     return this[paramsSectionTemplate]('Response body', 'payloadOpened', content);
   }
@@ -344,12 +303,22 @@ export default class AmfResponseDocumentElement extends AmfDocumentationBase {
     if (!mime.length) {
       return '';
     }
+    const mimeType = this.mimeType || mime[0];
     return html`
     <div class="media-type-selector">
-      <label id="mediaTypeSelector">Select media type</label>
-      <select name="mediaType" aria-describedby="mediaTypeSelector" @blur="${this[mediaTypeBlurHandler]}" @change="${this[mediaTypeBlurHandler]}">
-        ${mime.map((type) => html`<option value="${type}">${type}</option>`)}
-      </select>
+      <anypoint-dropdown-menu
+        class="amf-media-types"
+      >
+        <label slot="label">Body content type</label>
+        <anypoint-listbox
+          slot="dropdown-content"
+          attrforselected="data-value"
+          .selected="${mimeType}"
+          @selected-changed="${this[mediaTypeSelectHandler]}"
+        >
+          ${mime.map((type) => html`<anypoint-item data-value="${type}">${type}</anypoint-item>`)}
+        </anypoint-listbox>
+      </anypoint-dropdown-menu>
     </div>
     `;
   }

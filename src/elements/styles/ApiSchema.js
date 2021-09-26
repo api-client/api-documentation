@@ -5,39 +5,20 @@ export default css`
   display: block;
 }
 
-.property-container {
-  border-bottom: 1px var(--schema-property-border-color, #C6c6c6) solid;
-  margin: 20px 0px;
-}
-
 .schema-title {
-  font-size: 1.2rem;
-  margin: 12px 0;
+  display: flex;
+  align-items: center;
+  flex-direction: row;
 }
 
-.schema-example {
-  margin-bottom: 12px;
+.schema-title .label {
+  font-size: var(--schema-title-size, 32px);
+  font-weight: var(--schema-title-weight, 400);
+  margin: 12px 0px;
 }
 
-.schema-example pre {
-  white-space: pre-wrap;
-  word-break: break-all;
-  margin: 0;
-  padding: 8px 4px;
-}
-
-.schema-example summary {
-  font-size: 1.1rem;
-  padding: 8px 12px;
-  background-color: var(--api-example-title-background-color,#ff9800);
-  color: var(--api-example-title-color,#000);
-  border-radius: 4px;
-  cursor: default;
-  transition: border-radius ease-in-out 0.2s;
-}
-
-.schema-example[open] summary {
-  border-bottom-right-radius: 0px;
-  border-bottom-left-radius: 0px;
+.schema-title.low-emphasis .label {
+  font-size: var(--schema-title-low-emphasis-size, 1.1rem);
+  font-weight: var(--schema-title-low-emphasis-weight, 400);
 }
 `;

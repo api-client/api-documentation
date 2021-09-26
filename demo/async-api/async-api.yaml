@@ -34,7 +34,7 @@ components:
             $ref: '#/components/schemas/sent-at'
     goodbye-msg:
       headers:
-        ref: '#/components/schemas/goodbye-headers-1'
+        $ref: '#/components/schemas/goodbye-headers-1'
       payload:
         type: object
         properties:

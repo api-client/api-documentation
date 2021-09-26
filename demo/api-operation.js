@@ -1,102 +1,26 @@
-/* eslint-disable lit-a11y/click-events-have-key-events */
 import { html } from 'lit-html';
-import { DemoPage } from '@advanced-rest-client/arc-demo-helper';
 import '@advanced-rest-client/arc-demo-helper/arc-interactive-demo.js';
-import '@anypoint-web-components/anypoint-dropdown-menu/anypoint-dropdown-menu.js';
-import '@anypoint-web-components/anypoint-listbox/anypoint-listbox.js';
-import '@anypoint-web-components/anypoint-item/anypoint-item.js';
 import '@anypoint-web-components/anypoint-checkbox/anypoint-checkbox.js';
-import { AmfStoreService } from '@api-client/amf-store';
-import { NavigationEventTypes, NavigationEditCommands, NavigationContextMenu, ReportingEventTypes } from '@api-client/graph-project';
+import { NavigationEventTypes } from '@api-client/graph-project';
 import '@api-client/graph-project/graph-api-navigation.js';
 import '../amf-operation-document.js';
+import { AmfDemoBase } from './lib/AmfDemoBase.js';
 
 /** @typedef {import('@api-client/graph-project').APIGraphNavigationEvent} APIGraphNavigationEvent */
 /** @typedef {import('@api-client/graph-project').APIExternalNavigationEvent} APIExternalNavigationEvent */
 /** @typedef {import('@api-client/graph-project').GraphErrorEvent} GraphErrorEvent */
 
-class ComponentPage extends DemoPage {
+class ComponentPage extends AmfDemoBase {
   constructor() {
     super();
-    this.initObservableProperties([
-      'loaded', 'initialized',
-      'selectedId', 'selectedType',
-      'apiId',
-    ]);
-    this.loaded = false;
-    this.initialized = false;
-    this.renderViewControls = true;
+    this.initObservableProperties([ 'selectedId', 'selectedType', 'edit' ]);
+    this.edit = false;
     this.selectedId = undefined;
     this.selectedType = undefined;
     this.apiId = undefined;
-    this.store = new AmfStoreService(window, {
-      amfLocation: '/node_modules/@api-client/amf-store/amf-bundle.js',
-    });
-    this.componentName = 'api-operation';
-    this.actionHandler = this.actionHandler.bind(this);
+    this.componentName = 'amf-operation-document';
     window.addEventListener(NavigationEventTypes.navigate, this.navigationHandler.bind(this));
     window.addEventListener(NavigationEventTypes.navigateExternal, this.externalNavigationHandler.bind(this));
-    window.addEventListener(ReportingEventTypes.error, this.errorHandler.bind(this));
-    this.autoLoad();
-  }
-
-  async autoLoad() {
-    await this.initStore();
-    await this.loadDemoApi('demo-api-compact.json');
-  }
-
-  async firstRender() {
-    await super.firstRender();
-    const element = document.body.querySelector('graph-api-navigation');
-    if (element) {
-      this.contextMenu = new NavigationContextMenu(element);
-      this.contextMenu.registerCommands(NavigationEditCommands);
-      this.contextMenu.connect();
-    }
-  }
-
-  /**
-   * @param {GraphErrorEvent} e 
-   */
-  errorHandler(e) {
-    const { error, description, component } = e;
-    console.error(`[${component}]: ${description}`);
-    console.error(error);
-  }
-
-  async initStore() {
-    await this.store.init();
-    this.initialized = true;
-  }
-
-  /**
-   * @param {Event} e 
-   */
-  async actionHandler(e) {
-    const button = /** @type HTMLButtonElement */ (e.target);
-    switch (button.id) {
-      case 'init': this.initStore(); break;
-      case 'loadApiGraph': this.loadDemoApi(button.dataset.src); break;
-      case 'createWebApi': this.createWebApi(); break;
-      default: console.warn(`Unhandled action ${button.id}`);
-    }
-  }
-
-  async loadDemoApi(file) {
-    this.loaded = false;
-    const rsp = await fetch(`./${file}`);
-    const model = await rsp.text();
-    await this.store.loadGraph(model);
-    const api = await this.store.getApi();
-    this.apiId = api.id;
-    this.loaded = true;
-  }
-
-  async createWebApi() {
-    this.loaded = false;
-    const api = await this.store.createWebApi();
-    this.apiId = api;
-    this.loaded = true;
   }
 
   /**
@@ -128,12 +52,12 @@ class ComponentPage extends DemoPage {
   contentTemplate() {
     return html`
       <h2>API operation</h2>
-      ${this._demoTemplate()}
-      ${this._dataTemplate()}
+      ${this.dataTemplate()}
+      ${this.demoTemplate()}
     `;
   }
 
-  _demoTemplate() {
+  demoTemplate() {
     const { loaded } = this;
     return html`
     <section class="documentation-section">
@@ -167,7 +91,7 @@ class ComponentPage extends DemoPage {
   }
 
   _componentTemplate() {
-    const { demoStates, darkThemeActive, selectedId } = this;
+    const { demoStates, darkThemeActive, selectedId, edit } = this;
     if (!selectedId) {
       return html`<p>Select API operation in the navigation</p>`;
     }
@@ -178,8 +102,9 @@ class ComponentPage extends DemoPage {
       ?dark="${darkThemeActive}"
     >
       <amf-operation-document
-        .operationId="${selectedId}"
+        .domainId="${selectedId}"
         slot="content"
+        ?edit="${edit}"
       >
       </amf-operation-document>
 
@@ -193,27 +118,6 @@ class ComponentPage extends DemoPage {
         Edit graph
       </anypoint-checkbox>
     </arc-interactive-demo>
-    `;
-  }
-  
-  _dataTemplate() {
-    const { initialized } = this;
-    return html`
-    <section class="documentation-section">
-      <h3>Store actions</h3>
-
-      <h4>Initialization</h4>
-      <div @click="${this.actionHandler}">
-        <button id="init">Init</button>
-        <button id="loadApiGraph" data-src="demo-api-compact.json" ?disabled="${!initialized}">Load demo API</button>
-        <button id="loadApiGraph" data-src="async-api-compact.json" ?disabled="${!initialized}">Load async API</button>
-        <button id="loadApiGraph" data-src="google-drive-api.json" ?disabled="${!initialized}">Load Google Drive API</button>
-        <button id="loadApiGraph" data-src="streetlights-compact.json" ?disabled="${!initialized}">Streetlights (async) API</button>
-        <button id="loadApiGraph" data-src="oas-3-api.json" ?disabled="${!initialized}">OAS 3</button>
-        <button id="loadApiGraph" data-src="petstore.json" ?disabled="${!initialized}">Pet store (OAS 3)</button>
-        <button id="createWebApi" ?disabled="${!initialized}">Create empty Web API</button>
-      </div>
-    </section>
     `;
   }
 }

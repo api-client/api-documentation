@@ -1,20 +1,20 @@
+/* eslint-disable no-plusplus */
 /* eslint-disable class-methods-use-this */
-import { LitElement, html } from 'lit-element';
-// import { classMap } from 'lit-html/directives/class-map.js';
-import { EventsTargetMixin } from '@advanced-rest-client/events-target-mixin';
-import { StoreEvents, StoreEventTypes } from '@api-client/amf-store';
+import { html } from 'lit-element';
+import { classMap } from "lit-html/directives/class-map";
+import { StoreEvents, StoreEventTypes, ns } from '@api-client/amf-store/worker.index.js';
 import { TelemetryEvents, ReportingEvents } from '@api-client/graph-project';
-import markdownStyles from '@advanced-rest-client/markdown-styles/markdown-styles.js';
-import '@advanced-rest-client/arc-marked/arc-marked.js';
+import { MarkdownStyles } from '@advanced-rest-client/highlight';
+import { ApiExampleGenerator, ApiSchemaGenerator } from '@api-client/api-schema';
+import '@advanced-rest-client/highlight/arc-marked.js';
 import '@anypoint-web-components/anypoint-radio-button/anypoint-radio-button.js';
 import '@anypoint-web-components/anypoint-radio-button/anypoint-radio-group.js';
-import { ns } from '@api-components/amf-helper-mixin/src/Namespace';
+import { chevronRight } from '@advanced-rest-client/arc-icons';
 import commonStyles from './styles/Common.js';
 import elementStyles from './styles/ApiSchema.js';
 import schemaStyles from './styles/SchemaCommon.js';
-import { readPropertyTypeLabel } from '../Utils.js';
+import { readPropertyTypeLabel } from '../lib/Utils.js';
 import { 
-  descriptionValueTemplate, 
   detailsTemplate, 
   paramNameTemplate, 
   typeValueTemplate, 
@@ -22,11 +22,23 @@ import {
   scalarDetailsTemplate,
   unionDetailsTemplate,
 } from './SchemaCommonTemplates.js';
-import { ApiExampleGenerator } from '../ApiExampleGenerator.js';
-import { ShapeExampleGenerator } from '../generators/ShapeExampleGenerator.js';
+import { 
+  AmfDocumentationBase,
+  queryingValue,
+} from './AmfDocumentationBase.js';
+import { 
+  DescriptionEditMixin, 
+  updateDescription, 
+  descriptionTemplate,
+  descriptionFocusHandler,
+  descriptionEditorTemplate,
+  descriptionEditor,
+  focusMarkdownEditor,
+} from './mixins/DescriptionEditMixin.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiStoreStateUpdateEvent} ApiStoreStateUpdateEvent */
+/** @typedef {import('@api-client/amf-store').ApiStoreStateCreateEvent} ApiStoreStateCreateEvent */
 /** @typedef {import('@api-client/amf-store').ApiShapeUnion} ApiShapeUnion */
 /** @typedef {import('@api-client/amf-store').ApiExample} ApiExample */
 /** @typedef {import('@api-client/amf-store').ApiScalarShape} ApiScalarShape */
@@ -38,10 +50,10 @@ import { ShapeExampleGenerator } from '../generators/ShapeExampleGenerator.js';
 /** @typedef {import('@api-client/amf-store').ApiArrayShape} ApiArrayShape */
 /** @typedef {import('@api-client/amf-store').ApiTupleShape} ApiTupleShape */
 /** @typedef {import('@api-client/amf-store').ApiPropertyShape} ApiPropertyShape */
-/** @typedef {import('../types').SchemaExample} SchemaExample */
+/** @typedef {import('@api-client/api-schema').SchemaExample} SchemaExample */
+/** @typedef {import('./mixins/DescriptionEditMixin').DescriptionTemplateOptions} DescriptionTemplateOptions */
 
-export const schemaIdValue = Symbol('schemaIdValue');
-export const queryingValue = Symbol('queryingValue');
+export const mimeTypeValue = Symbol('mimeTypeValue');
 export const querySchema = Symbol('querySchema');
 export const examplesValue = Symbol('examplesValue');
 export const evaluateExamples = Symbol('evaluateExamples');
@@ -53,11 +65,11 @@ export const processSchema = Symbol('processSchema');
 export const titleTemplate = Symbol('titleTemplate');
 export const schemaUpdatedHandler = Symbol('schemaUpdatedHandler');
 export const expandHandler = Symbol('expandHandler');
+export const expandKeydownHandler = Symbol('expandKeydownHandler');
 export const anyOfSelectedHandler = Symbol('anyOfSelectedHandler');
-export const descriptionTemplate = Symbol('descriptionTemplate');
 export const schemaContentTemplate = Symbol('schemaContentTemplate');
 export const scalarShapeTemplate = Symbol('scalarSchemaTemplate');
-export const nodeShapeTemplate = Symbol('nodeSchemaTemplate');
+export const nodeShapeTemplate = Symbol('nodeShapeTemplate');
 export const unionShapeTemplate = Symbol('unionSchemaTemplate');
 export const fileShapeTemplate = Symbol('fileShapeTemplate');
 export const schemaShapeTemplate = Symbol('schemaShapeTemplate');
@@ -65,10 +77,19 @@ export const arrayShapeTemplate = Symbol('arrayShapeTemplate');
 export const tupleShapeTemplate = Symbol('tupleShapeTemplate');
 export const anyShapeTemplate = Symbol('anyShapeTemplate');
 export const shapePropertyTemplate = Symbol('shapePropertyTemplate');
+export const shapePropertyWithoutRangeTemplate = Symbol('shapePropertyWithoutRangeTemplate');
 export const anyOfUnionTemplate = Symbol('anyOfUnionTemplate');
 export const anyOfOptionsTemplate = Symbol('anyOfOptionsTemplate');
 export const examplesTemplate = Symbol('examplesTemplate');
 export const exampleTemplate = Symbol('exampleTemplate');
+export const propertyDescriptionTemplate = Symbol('propertyDescriptionTemplate');
+export const propertyDescriptionEditor = Symbol('propertyDescriptionEditor');
+export const checkSchemaPropertyUpdate = Symbol('checkSchemaPropertyUpdate');
+export const addPropertyButton = Symbol('addPropertyButton');
+export const addPropertyHandler = Symbol('addPropertyHandler');
+export const propertyCreatedHandler = Symbol('propertyCreatedHandler');
+export const propertyDecoratorTemplate = Symbol('propertyDecoratorTemplate');
+export const toggleExpandedProperty = Symbol('toggleExpandedProperty');
 
 const complexTypes = [
   ns.w3.shacl.NodeShape,
@@ -77,46 +98,32 @@ const complexTypes = [
   ns.aml.vocabularies.shapes.TupleShape,
 ];
 
-export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitElement) {
+export default class AmfSchemaDocumentElement extends DescriptionEditMixin(AmfDocumentationBase) {
   static get styles() {
-    return [commonStyles, schemaStyles, elementStyles, markdownStyles];
+    return [commonStyles, schemaStyles, elementStyles, MarkdownStyles];
   }
 
-  /** 
-   * @returns {string|undefined} The domain id of the API schema to render.
-   */
-  get schemaId() {
-    return this[schemaIdValue];
+  get mimeType() {
+    return this[mimeTypeValue];
   }
 
-  /** 
-   * @returns {string|undefined} The domain id of the API schema to render.
-   */
-  set schemaId(value) {
-    const old = this[schemaIdValue];
+  set mimeType(value) {
+    const old = this[mimeTypeValue];
     if (old === value) {
       return;
     }
-    this[schemaIdValue] = value;
-    this.requestUpdate('schemaId', old);
+    this[mimeTypeValue] = value;
+    this.requestUpdate('mimeType', old);
     if (value) {
-      setTimeout(() => this.queryGraph(value));
+      setTimeout(() => {
+        this[processSchema]();
+        this.requestUpdate();
+      });
     }
-  }
-
-  /** 
-   * @returns {boolean} When true then the element is currently querying for the graph data.
-   */
-  get querying() {
-    return this[queryingValue] || false;
   }
 
   static get properties() {
     return {
-      /** 
-       * The domain id of the API schema to render.
-       */
-      schemaId: { type: String, reflect: true },
       /** 
        * The mime type to use to render the examples.
        */
@@ -126,6 +133,15 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
        * when examples are not defined in the schema.
        */
       forceExamples: { type: Boolean, reflect: true },
+      /** 
+       * When set it allows to manipulate the properties.
+       * This is to be used with a combination with the `edit` property.
+       */
+      editProperties: { type: Boolean, reflect: true },
+      /** 
+       * When set it renders the title with lower emphasis and adding `schema` prefix.
+       */
+      schemaTitle: { type: Boolean, reflect: true },
     };
   }
 
@@ -150,17 +166,20 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
     /**
      * @type {string}
      */
+    this[propertyDescriptionEditor] = undefined;
+    /**
+     * @type {string}
+     */
     this.mimeType = undefined;
-    this.forceExamples = false;
+    /** @type boolean */
+    this.forceExamples = undefined;
+    /** @type boolean */
+    this.editProperties = undefined;
+    /** @type boolean */
+    this.schemaTitle = undefined;
 
     this[schemaUpdatedHandler] = this[schemaUpdatedHandler].bind(this);
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.schemaId) {
-      this.queryGraph(this.schemaId);
-    }
+    this[propertyCreatedHandler] = this[propertyCreatedHandler].bind(this);
   }
 
   /**
@@ -169,6 +188,7 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
   _attachListeners(node) {
     super._attachListeners(node);
     node.addEventListener(StoreEventTypes.Type.State.updated, this[schemaUpdatedHandler]);
+    node.addEventListener(StoreEventTypes.Type.State.propertyCreated, this[propertyCreatedHandler]);
   }
 
   /**
@@ -181,17 +201,17 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
 
   /**
    * Queries the graph store for the API schema data.
-   * @param {string} schemaId The domain id of the API schema to render.
    * @returns {Promise<void>}
    */
-  async queryGraph(schemaId) {
+  async queryGraph() {
     if (this.querying) {
       return;
     }
+    const { domainId } = this;
     this[expandedValue] = [];
     this[selectedUnionsValue] = {};
     this[queryingValue] = true;
-    await this[querySchema](schemaId);
+    await this[querySchema](domainId);
     this[processSchema]();
     this[queryingValue] = false;
     await this.requestUpdate();
@@ -205,6 +225,7 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
     this[schemaValue] = undefined;
     try {
       const info = await StoreEvents.Type.get(this, schemaId);
+      // console.log(info);
       this[schemaValue] = info;
     } catch (e) {
       TelemetryEvents.exception(this, e.message, false);
@@ -222,9 +243,21 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
       this[examplesValue] = undefined;
       return;
     }
-    const { examples } = type;
-    if (Array.isArray(examples) && examples.length) {
-      this[examplesValue] = this[evaluateExamples](examples);
+    const { examples=[] } = type;
+    let examplesCopy = [...examples];
+
+    if (Array.isArray(type.inherits) && type.inherits.length) {
+      type.inherits.forEach((item) => {
+        if (Array.isArray(item.examples) && item.examples.length) {
+          examplesCopy = examplesCopy.concat([...item.examples]);
+        }
+      });
+    }
+    if (Array.isArray(examplesCopy) && examplesCopy.length) {
+      examplesCopy = examplesCopy.filter((i) => !!i.value || !!i.structuredValue);
+    }
+    if (Array.isArray(examplesCopy) && examplesCopy.length) {
+      this[examplesValue] = this[evaluateExamples](examplesCopy);
     } else {
       const { mimeType, forceExamples } = this;
       this[examplesValue] = undefined;
@@ -236,7 +269,7 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
             selectedUnions.push(all[id]);
           }
         });
-        const result = ShapeExampleGenerator.fromSchema(type, mimeType, {
+        const result = ApiSchemaGenerator.asExample(type, mimeType, {
           selectedUnions,
         });
         if (result) {
@@ -279,7 +312,8 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
    */
   async [schemaUpdatedHandler](e) {
     const { graphId, item } = e.detail;
-    if (graphId !== this.schemaId) {
+    if (graphId !== this.domainId) {
+      this[checkSchemaPropertyUpdate](this[schemaValue], graphId, item);
       return;
     }
     this[schemaValue] = item;
@@ -288,11 +322,102 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
   }
 
   /**
+   * @param {ApiStoreStateCreateEvent} e
+   */
+  [propertyCreatedHandler](e) {
+    const { item, domainParent } = e.detail;
+    const schema = this[schemaValue];
+    if (!schema || domainParent !== this.domainId) {
+      return;
+    }
+    // @todo: can it be a property of an union here?
+    const type = /** @type ApiNodeShape */ (schema);
+    if (!Array.isArray(type.properties)) {
+      type.properties = [];
+    }
+    type.properties.push(item);
+    this.requestUpdate();
+  }
+
+  /**
+   * Checks the current schema whether it contains a property with the given id
+   * and if so it updates its value.
+   * @param {ApiShapeUnion} schema
+   * @param {string} id
+   * @param {any} updated
+   */
+  [checkSchemaPropertyUpdate](schema, id, updated) {
+    if (!schema) {
+      return;
+    }
+    const { types } = schema;
+    if (types.includes(ns.w3.shacl.NodeShape)) {
+      const type = /** @type ApiNodeShape */ (schema);
+      const { properties } = type;
+      for (let i = 0, len = properties.length; i < len; i++) {
+        const property = properties[i];
+        if (property.id === id) {
+          properties[i] = updated;
+          this.requestUpdate();
+          return;
+        }
+        if (property.range && property.range.id === id) {
+          property.range = updated;
+          this.requestUpdate();
+          return;
+        }
+      }
+      return;
+    }
+    if (types.includes(ns.aml.vocabularies.shapes.UnionShape)) {
+      const type = /** @type ApiUnionShape */ (schema);
+      const { anyOf, or, and } = type;
+      if (Array.isArray(anyOf) && anyOf.length) {
+        anyOf.forEach((item) => this[checkSchemaPropertyUpdate](item, id, updated));
+      }
+      if (Array.isArray(or) && or.length) {
+        or.forEach((item) => this[checkSchemaPropertyUpdate](item, id, updated));
+      }
+      if (Array.isArray(and) && and.length) {
+        and.forEach((item) => this[checkSchemaPropertyUpdate](item, id, updated));
+      }
+      return;
+    }
+    if (types.includes(ns.aml.vocabularies.shapes.ArrayShape) || types.includes(ns.aml.vocabularies.shapes.MatrixShape)) {
+      const type = /** @type ApiArrayShape */ (schema);
+      if (type.items) {
+        this[checkSchemaPropertyUpdate](type.items, id, updated)
+      }
+    }
+  }
+
+  /**
    * @param {Event} e
    */
   [expandHandler](e) {
     const button = /** @type HTMLElement */ (e.currentTarget);
     const { id } = button.dataset;
+    this[toggleExpandedProperty](id);
+  }
+
+  /**
+   * @param {KeyboardEvent} e
+   */
+  [expandKeydownHandler](e) {
+    if (e.code !== 'Space') {
+      return;
+    }
+    e.preventDefault();
+    const button = /** @type HTMLElement */ (e.currentTarget);
+    const { id } = button.dataset;
+    this[toggleExpandedProperty](id);
+  }
+
+  /**
+   * Toggles an "expanded" state for a property children.
+   * @param {string} id Parent property id that has children to toggle visibility of.
+   */
+  [toggleExpandedProperty](id) {
     const list = this[expandedValue];
     const index = list.indexOf(id);
     if (index === -1) {
@@ -314,15 +439,64 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
     this.requestUpdate();
   }
 
+  /**
+   * Updates the description of the schema.
+   * @param {string} markdown The new markdown to set.
+   * @param {DescriptionTemplateOptions=} opts Deserialized template options, if any.
+   * @return {Promise<void>} 
+   */
+  async [updateDescription](markdown, opts) {
+    if (opts) {
+      const { domainId } = opts;
+      // if (target === 'schema') {
+      //   await StoreEvents.Type.update(this, domainId, 'description', markdown);
+      // } else {
+      //   await StoreEvents.Type.update(this, domainId, 'description', markdown);
+      // }
+      await StoreEvents.Type.update(this, domainId, 'description', markdown);
+      this[propertyDescriptionEditor] = undefined;
+    } else {
+      await StoreEvents.Type.update(this, this.domainId, 'description', markdown);
+      this[schemaValue].description = markdown;
+    }
+  }
+
+  /**
+   * Overrides the parent focus handler to support properties description.
+   * @param {Event} e
+   */
+  async [descriptionFocusHandler](e) {
+    const mdElement = /** @type HTMLElement */ (e.currentTarget);
+    const { domainId, target } = mdElement.dataset;
+    if (!domainId || !target) {
+      await super[descriptionFocusHandler]();
+      return;
+    }
+    this[propertyDescriptionEditor] = domainId;
+    this[descriptionEditor] = false;
+    await this.requestUpdate();
+    this[focusMarkdownEditor]();
+  }
+
+  async [addPropertyHandler]() {
+    try {
+      await StoreEvents.Type.addProperty(this, this.domainId, {
+        name: 'New Property',
+      });
+    } catch (e) {
+      TelemetryEvents.exception(this, e.message, false);
+      ReportingEvents.error(this, e, `Unable to create a property: ${e.message}`, this.localName);
+    }
+  }
+
   render() {
-    // todo: render schema examples
     const schema = this[schemaValue];
     if (!schema) {
       return html``;
     }
     return html`
     ${this[titleTemplate]()}
-    ${this[descriptionTemplate]()}
+    ${this[descriptionTemplate](schema.description)}
     ${this[examplesTemplate]()}
     ${this[schemaContentTemplate](schema)}
     `;
@@ -338,27 +512,17 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
     if (label === 'schema') {
       return '';
     }
+    const { schemaTitle } = this;
+    const headerCss = {
+      'schema-title': true,
+      'low-emphasis': !!schemaTitle,
+    };
+    const prefix = schemaTitle ? 'Schema: ' : '';
     return html`
-    <div class="schema-title">
-      <span class="label">Schema: ${label}</span>
-    </div>
-    `;
-  }
-
-  /**
-   * @returns {TemplateResult|string} The template for the markdown description.
-   */
-  [descriptionTemplate]() {
-    const schema = this[schemaValue];
-    const { description } = schema;
-    if (!description) {
-      return '';
-    }
-    return html`
-    <div class="api-description">
-      <arc-marked .markdown="${description}" sanitize>
-        <div slot="markdown-html" class="markdown-body"></div>
-      </arc-marked>
+    <div class="schema-header">
+      <div class="${classMap(headerCss)}">
+        <span class="label">${prefix}${label}</span>
+      </div>
     </div>
     `;
   }
@@ -442,13 +606,64 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
    * @returns {TemplateResult} The template for the node shape.
    */
   [nodeShapeTemplate](schema) {
-    const { properties } = schema;
-    if (!properties.length) {
-      return html`<div class="empty-info">Parameters are not defined for this schema.</div>`;
+    const { properties, inherits } = schema;
+    let items = [...(properties || [])];
+    if (Array.isArray(inherits) && inherits.length) {
+      inherits.forEach((item) => {
+        if (item.types.includes(ns.w3.shacl.NodeShape)) {
+          const typed = /** @type ApiNodeShape */ (item);
+          items = items.concat([...(typed.properties || [])]);
+        }
+      });
+    }
+    if (!items.length) {
+      return html`
+        <div class="empty-info">Properties are not defined for this schema.</div>
+        ${this[addPropertyButton]()}
+      `;
     }
     return html`
     <div class="params-section">
-      ${properties.map((item) => this[shapePropertyTemplate](item))}
+      ${items.map((item) => this[shapePropertyTemplate](item))}
+    </div>
+    `;
+  }
+
+  // /**
+  //  * @param {ApiShapeUnion[]} parents
+  //  * @returns {TemplateResult[]|undefined}
+  //  */
+  // [inheritedTemplate](parents) {
+  //   if (!Array.isArray(parents) || !parents.length) {
+  //     return undefined;
+  //   }
+  //   const parts = [];
+  //   parents.forEach((item) => {
+  //     const tpl = this[schemaContentTemplate](item);
+  //     if (tpl) {
+  //       parts.push(tpl);
+  //     }
+  //   });
+  //   if (!parts.length) {
+  //     return undefined;
+  //   }
+  //   return parts;
+  // }
+
+  /**
+   * @returns {TemplateResult|string} The template for the add node's property, when allowed.
+   */
+  [addPropertyButton]() {
+    const { editProperties, edit } = this;
+    if (!edit || !editProperties) {
+      return '';
+    }
+    return html`
+    <div class="add-property-button">
+      <anypoint-button 
+        title="Creates a new property of this schema."
+        @click="${this[addPropertyHandler]}"
+      >Add new property</anypoint-button>
     </div>
     `;
   }
@@ -459,12 +674,31 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
    */
   [unionShapeTemplate](schema) {
     const unionTemplate = unionDetailsTemplate(schema);
-    const { anyOf } = schema;
+    const { anyOf, or, and } = schema;
     if (Array.isArray(anyOf) && anyOf.length) {
       const schemaContent = this[anyOfUnionTemplate](schema.id, anyOf);
       return html`
       ${unionTemplate}
       ${schemaContent}
+      `;
+    }
+    if (Array.isArray(or) && or.length) {
+      const schemaContent = this[anyOfUnionTemplate](schema.id, or);
+      return html`
+      ${unionTemplate}
+      ${schemaContent}
+      `;
+    }
+    if (Array.isArray(and) && and.length) {
+      const items = and.map((item) => html`
+      <div class="and-union-item">
+        ${this[schemaContentTemplate](item)}
+      </div>
+      `);
+      return html`
+      <div class="combined-union">
+        ${items}
+      </div>
       `;
     }
     return unionTemplate;
@@ -493,8 +727,10 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
       }
     });
     return html`
-    ${this[anyOfOptionsTemplate](schemaId, options, selected)}
-    ${this[schemaContentTemplate](renderedItem)}
+    <div class="union-container">
+      ${this[anyOfOptionsTemplate](schemaId, options, selected)}
+      ${this[schemaContentTemplate](renderedItem)}
+    </div>
     `;
   }
 
@@ -533,7 +769,17 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
    * @returns {TemplateResult} The template for the schema shape.
    */
   [schemaShapeTemplate](schema) {
-    return html`Fix me (schema): ${schema.id}`;
+    const { raw } = schema;
+    if (!raw) {
+      return html`
+      <div class="empty-info">Schema is not defined for this message.</div>
+      `;
+    }
+    return html`
+    <div class="schema-content">
+    <pre class="code-value"><code>${raw}</code></pre>
+    </div>
+    `;
   }
 
   /**
@@ -570,23 +816,29 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
 
   /**
    * @param {ApiAnyShape} schema
-   * @returns {TemplateResult} The template for the Any shape.
+   * @returns {TemplateResult|string} The template for the Any shape.
    */
-  // eslint-disable-next-line no-unused-vars
   [anyShapeTemplate](schema) {
+    const { and, or } = schema;
+    if (and.length || or.length) {
+      return this[unionShapeTemplate](/** @type ApiUnionShape */ (schema));
+    }
     return html`<p class="any-info">Any schema is accepted as the value here.</p>`;
   }
 
   /**
    * @param {ApiPropertyShape} schema
+   * @returns {TemplateResult} The template for the schema property item.
    */
   [shapePropertyTemplate](schema) {
     const { range, minCount } = schema;
-    const { displayName } = range;
+    if (!range) {
+      return this[shapePropertyWithoutRangeTemplate](schema);
+    }
+    const { displayName, deprecated } = range;
     const required = minCount > 0;
     const type = readPropertyTypeLabel(range);
     const label = schema.name || displayName || range.name;
-    const desc = schema.description || range.description;
     const [domainType] = range.types;
     
     let isComplex = complexTypes.includes(domainType);
@@ -598,24 +850,115 @@ export default class AmfSchemaDocumentElement extends EventsTargetMixin(LitEleme
     }
     const allExpanded = this[expandedValue];
     const expanded = isComplex && allExpanded.includes(schema.id);
-    const buttonLabel = expanded ? 'Hide' : 'Show schema';
     return html`
     <div class="property-container">
-      <div class="name-column">
-        ${paramNameTemplate(label, required)}
-        ${typeValueTemplate(type)}
-        ${isComplex ? html`<anypoint-button data-id="${schema.id}" @click="${this[expandHandler]}">${buttonLabel}</anypoint-button>` : ''}
+      <div class="property-border"></div>
+      <div class="property-value">
+        <div class="property-headline">
+          ${this[propertyDecoratorTemplate](isComplex, expanded, schema.id)}
+          ${paramNameTemplate(label, required, deprecated)}
+          <span class="headline-separator"></span>
+          ${typeValueTemplate(type)}
+        </div>
+        <div class="description-column">
+          ${this[propertyDescriptionTemplate](schema)}
+        </div>
+        <div class="details-column">
+          ${detailsTemplate(range)}
+        </div>
       </div>
-      <div class="description-column">
-        ${descriptionValueTemplate(desc)}
-        ${detailsTemplate(range)}
       </div>
-    </div>
     ${expanded ? html`
     <div class="shape-children">
+      <div class="property-border"></div>
       ${this[schemaContentTemplate](range)}
     </div>
     ` : ''}
     `;
+  }
+
+  /**
+   * @param {boolean} isComplex
+   * @param {boolean} expanded
+   * @param {string} schemaId
+   * @returns {TemplateResult} THe template for the line decorator in front of the property name.
+   */
+  [propertyDecoratorTemplate](isComplex, expanded, schemaId) {
+    const toggleIcon = isComplex ? html`
+    <span class="object-toggle-icon ${expanded ? 'opened' : ''}">${chevronRight}</span>
+    ` : '';
+    const decoratorClasses = {
+      'property-decorator': true,
+      scalar: !isComplex,
+      object: !!isComplex,
+    };
+    const toggleHandler = isComplex ? this[expandHandler] : undefined;
+    const keydownHandler = isComplex ? this[expandKeydownHandler] : undefined;
+    const tabIndex = isComplex ? '0' : '-1';
+    return html`
+    <div 
+      class="${classMap(decoratorClasses)}" 
+      data-id="${schemaId}" 
+      @click="${toggleHandler}"
+      @keydown="${keydownHandler}"
+      tabindex="${tabIndex}"
+    ><hr/>${toggleIcon}</div>
+    `;
+  }
+
+  /**
+   * @param {ApiPropertyShape} schema
+   * @returns {TemplateResult} The template for the schema property item that has no range information.
+   */
+  [shapePropertyWithoutRangeTemplate](schema) {
+    const { minCount, name, displayName, deprecated } = schema;
+    const label = name || displayName || 'Unnamed property';
+    const required = minCount > 0;
+    return html`
+    <div class="property-container">
+      <div class="name-column">
+        ${paramNameTemplate(label, required, deprecated)}
+        <div class="param-type">
+          Unknown type
+        </div>
+      </div>
+      <div class="description-column">
+        ${this[propertyDescriptionTemplate](schema)}
+      </div>
+    </div>
+    `;
+  }
+
+  /**
+   * @param {ApiPropertyShape} schema
+   */
+  [propertyDescriptionTemplate](schema) {
+    const { range, description, id } = schema;
+    if (!range || description) {
+      return this[descriptionTemplate](description, {
+        domainId: id,
+        target: 'schema',
+      });
+    }
+    return this[descriptionTemplate](range.description, {
+      domainId: range.id,
+      target: 'range',
+    });
+  }
+
+  /**
+   * @param {string=} description The description to render.
+   * @param {DescriptionTemplateOptions=} opts Optional rendering options.
+   * @returns {TemplateResult|string} The template for the markdown description.
+   */
+  [descriptionTemplate](description, opts) {
+    if (!opts) {
+      return super[descriptionTemplate](description, opts);
+    }
+    const { edit } = this;
+    if (edit && this[propertyDescriptionEditor] === opts.domainId) {
+      return this[descriptionEditorTemplate](description, opts);
+    }
+    return super[descriptionTemplate](description, opts);
   }
 }

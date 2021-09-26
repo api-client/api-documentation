@@ -41,10 +41,6 @@ export default css`
   margin: 20px 0;
 }
 
-.params-section {
-  margin-bottom: 40px;
-}
-
 .params-title {
   display: flex;
   align-items: center;
@@ -76,5 +72,34 @@ export default css`
 
 .media-type span {
   font-weight: 500;
+}
+
+.amf-media-types {
+  margin: 12px 0;
+}
+
+.deprecated {
+  text-decoration: line-through;
+}
+
+.deprecated-message {
+  font-weight: bold;
+  margin: 12px 0;
+  padding: 12px 8px;
+  background-color: var(--deprecated-message-background-color, #ffc107);
+  color: var(--deprecated-message-color, var(--primary-text-color, #000));
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+}
+
+.deprecated-message .message {
+  margin-left: 12px;
+}
+
+.empty-info {
+  font-size: 1.1rem;
+  margin-left: 24px;
+  padding: 12px 0;
 }
 `;

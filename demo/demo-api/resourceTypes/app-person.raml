@@ -18,15 +18,25 @@ example:
   tagline: Some text about me.
   language: en_GB
   etag: "W\\244m4n5kj3gbn2nj4k4n4"
+  tags:
+    - name: Manager
+      id: 12345test
+    
 properties:
   id:
+    xml:
+      attribute: true
     description: A unique identifier for a person. It is a 32 bit string containing alphanumeric characters.
+    type: string
   name:
     required: true
     example: John Smith
     description: Person full name. The input will be rejected if this property is not set while creating new object.
     type: string
     pattern: "[0-9a-zA-Z ]+"
+    xml:
+      attribute: true
+      name: fullname
   birthday:
     type: string
     description: The person's date of birth, represented as YYYY-MM-DD.
@@ -40,10 +50,24 @@ properties:
   url:
     type: string
     description: The URL of this person's profile.
-  image: !include image.raml
+  image: 
+    type: !include image.raml
+    xml:
+      wrapped: true
   tagline:
     type: string
     description: The brief description (tagline) of this person.
   language:
     type: string
     description: The user's preferred language for rendering.
+  tags:
+    description: Tags added to the person.
+    properties:
+      name: 
+        type: string
+        description: The name of the tag
+      id:
+        type: string
+        description: Tag's identifier.
+    xml:
+      wrapped: false

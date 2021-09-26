@@ -1,15 +1,19 @@
 /* eslint-disable class-methods-use-this */
-import { LitElement, html } from 'lit-element';
-import { EventsTargetMixin } from '@advanced-rest-client/events-target-mixin';
-import { StoreEvents, StoreEventTypes } from '@api-client/amf-store';
+import { html } from 'lit-element';
+import { StoreEvents, StoreEventTypes } from '@api-client/amf-store/worker.index.js';
 import { TelemetryEvents, ReportingEvents } from '@api-client/graph-project';
-import markdownStyles from '@advanced-rest-client/markdown-styles/markdown-styles.js';
-import '@advanced-rest-client/arc-marked/arc-marked.js';
+import { MarkdownStyles } from '@advanced-rest-client/highlight';
+import '@advanced-rest-client/highlight/arc-marked.js';
 import commonStyles from './styles/Common.js';
 import elementStyles from './styles/ApiParameter.js';
 import schemaStyles from './styles/SchemaCommon.js';
-import { readPropertyTypeLabel } from '../Utils.js';
-import { paramNameTemplate, typeValueTemplate, descriptionValueTemplate, detailsTemplate } from './SchemaCommonTemplates.js';
+import { readPropertyTypeLabel } from '../lib/Utils.js';
+import { paramNameTemplate, typeValueTemplate, detailsTemplate } from './SchemaCommonTemplates.js';
+import { 
+  AmfDocumentationBase,
+  queryingValue,
+} from './AmfDocumentationBase.js';
+import { DescriptionEditMixin, updateDescription, descriptionTemplate } from './mixins/DescriptionEditMixin.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiParameter} ApiParameter */
@@ -18,62 +22,23 @@ import { paramNameTemplate, typeValueTemplate, descriptionValueTemplate, details
 /** @typedef {import('@api-client/amf-store').ApiArrayShape} ApiArrayShape */
 /** @typedef {import('@api-client/amf-store').ApiScalarNode} ApiScalarNode */
 /** @typedef {import('@api-client/amf-store').ApiStoreStateUpdateEvent} ApiStoreStateUpdateEvent */
+/** @typedef {import('./mixins/DescriptionEditMixin').DescriptionTemplateOptions} DescriptionTemplateOptions */
 
-export const parameterIdValue = Symbol('requestIdValue');
-export const queryingValue = Symbol('queryingValue');
 export const queryParameter = Symbol('queryParameter');
 export const querySchema = Symbol('querySchema');
 export const parameterValue = Symbol('parameterValue');
 export const schemaValue = Symbol('schemaValue');
 export const computeParamType = Symbol('computeParamType');
 export const typeLabelValue = Symbol('typeLabelValue');
-export const descriptionTemplate = Symbol('descriptionTemplate');
 export const schemaUpdatedHandler = Symbol('schemaUpdatedHandler');
+export const parameterUpdatedHandler = Symbol('parameterUpdatedHandler');
 
 /**
  * A web component that renders the documentation for a single request / response parameter.
  */
-export default class AmfParameterDocumentElement extends EventsTargetMixin(LitElement) {
+export default class AmfParameterDocumentElement extends DescriptionEditMixin(AmfDocumentationBase) {
   static get styles() {
-    return [markdownStyles, commonStyles, schemaStyles, elementStyles];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the API parameter to render.
-   */
-  get parameterId() {
-    return this[parameterIdValue];
-  }
-
-  /** 
-   * @returns {string|undefined} The domain id of the API parameter to render.
-   */
-  set parameterId(value) {
-    const old = this[parameterIdValue];
-    if (old === value) {
-      return;
-    }
-    this[parameterIdValue] = value;
-    this.requestUpdate('parameterId', old);
-    if (value) {
-      setTimeout(() => this.queryGraph(value));
-    }
-  }
-
-  /** 
-   * @returns {boolean} When true then the element is currently querying for the graph data.
-   */
-  get querying() {
-    return this[queryingValue] || false;
-  }
-
-  static get properties() {
-    return {
-      /** 
-       * The domain id of the API parameter to render.
-       */
-      parameterId: { type: String, reflect: true },
-    };
+    return [MarkdownStyles, commonStyles, schemaStyles, elementStyles];
   }
 
   constructor() {
@@ -92,13 +57,7 @@ export default class AmfParameterDocumentElement extends EventsTargetMixin(LitEl
     this[typeLabelValue] = undefined;
 
     this[schemaUpdatedHandler] = this[schemaUpdatedHandler].bind(this);
-  }
-
-  connectedCallback() {
-    super.connectedCallback();
-    if (this.parameterId) {
-      this.queryGraph(this.parameterId);
-    }
+    this[parameterUpdatedHandler] = this[parameterUpdatedHandler].bind(this);
   }
 
   /**
@@ -107,6 +66,7 @@ export default class AmfParameterDocumentElement extends EventsTargetMixin(LitEl
   _attachListeners(node) {
     super._attachListeners(node);
     node.addEventListener(StoreEventTypes.Type.State.updated, this[schemaUpdatedHandler]);
+    node.addEventListener(StoreEventTypes.Parameter.State.updated, this[parameterUpdatedHandler]);
   }
 
   /**
@@ -115,19 +75,20 @@ export default class AmfParameterDocumentElement extends EventsTargetMixin(LitEl
   _detachListeners(node) {
     super._detachListeners(node);
     node.removeEventListener(StoreEventTypes.Type.State.updated, this[schemaUpdatedHandler]);
+    node.removeEventListener(StoreEventTypes.Parameter.State.updated, this[parameterUpdatedHandler]);
   }
 
   /**
    * Queries the graph store for the API Parameter data.
-   * @param {string} parameterId The domain id of the API parameter to render.
    * @returns {Promise<void>}
    */
-  async queryGraph(parameterId) {
+  async queryGraph() {
     if (this.querying) {
       return;
     }
+    const { domainId } = this;
     this[queryingValue] = true;
-    await this[queryParameter](parameterId);
+    await this[queryParameter](domainId);
     await this[querySchema]();
     this[computeParamType]();
     this[queryingValue] = false;
@@ -190,6 +151,34 @@ export default class AmfParameterDocumentElement extends EventsTargetMixin(LitEl
     this.requestUpdate();
   }
 
+  /**
+   * @param {ApiStoreStateUpdateEvent} e
+   */
+  [parameterUpdatedHandler](e) {
+    const { graphId, item } = e.detail;
+    const param = this[parameterValue];
+    if (!param || graphId !== param.id) {
+      return;
+    }
+    this[parameterValue] = /** @type ApiParameter */ (item);
+    this.requestUpdate();
+  }
+
+  /**
+   * Updates the description of the response.
+   * @param {string} markdown The new markdown to set.
+   * @param {DescriptionTemplateOptions=} opts
+   * @return {Promise<void>} 
+   */
+  async [updateDescription](markdown, opts) {
+    const { domainId, target } = opts;
+    if (target === 'schema') {
+      await StoreEvents.Type.update(this, domainId, 'description', markdown);
+    } else {
+      await StoreEvents.Parameter.update(this, domainId, 'description', markdown);
+    }
+  }
+
   render() {
     const param = this[parameterValue];
     if (!param) {
@@ -199,13 +188,16 @@ export default class AmfParameterDocumentElement extends EventsTargetMixin(LitEl
     const type = this[typeLabelValue];
     const schema = this[schemaValue];
     return html`
-    <div class="property-container">
+    <div class="property-container simple">
       <div class="name-column">
         ${paramNameTemplate(name, required)}
+        <span class="headline-separator"></span>
         ${typeValueTemplate(type)}
       </div>
       <div class="description-column">
         ${this[descriptionTemplate]()}
+      </div>
+      <div class="details-column">
         ${detailsTemplate(schema)}
       </div>
     </div>
@@ -216,11 +208,17 @@ export default class AmfParameterDocumentElement extends EventsTargetMixin(LitEl
    * @return {TemplateResult|string} The template for the parameter description. 
    */
   [descriptionTemplate]() {
-    const param = this[parameterValue];
-    let { description } = param;
-    if (!description) {
-      description = this[schemaValue] && this[schemaValue].description;
+    const schema = this[schemaValue];
+    if (schema && schema.description) {
+      return super[descriptionTemplate](schema.description, {
+        domainId: schema.id,
+        target: 'schema',
+      });
     }
-    return descriptionValueTemplate(description);
+    const param = this[parameterValue];
+    return super[descriptionTemplate](param.description, {
+      domainId: param.id,
+      target: 'param',
+    });
   }
 }

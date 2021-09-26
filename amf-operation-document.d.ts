@@ -1,4 +1,4 @@
-import Element from './src/elements/AmfOperationDocumentElement.js';
+import Element from './src/elements/AmfOperationDocumentElement';
 
 declare global {
   interface HTMLElementTagNameMap {

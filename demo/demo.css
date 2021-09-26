@@ -25,7 +25,7 @@ body.demo.styled {
   color: #000;
   --error-color: red;
   --primary-text-color: #000;
-  --primary-color: #00a2df;
+  --primary-color: #e91e63;
   --primary-background-color: #ffffff;
   --dark-divider-opacity: 0.12;
   --anypoint-button-emphasis-high-background-color: var(--accent-color);
@@ -59,6 +59,8 @@ body.demo.styled {
   --http-method-label-head-color: var(--primary-text-color);
   --http-method-label-patch-background-color: var(--http-patch-color);
   --http-method-label-patch-color: #fff;
+
+  --anypoint-tabs-selection-bar-color: var(--primary-color);
 }
 
 body.demo.styled.dark {

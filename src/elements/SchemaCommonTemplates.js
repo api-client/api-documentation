@@ -1,5 +1,6 @@
 import { html } from "lit-element";
-import { ns } from '@api-components/amf-helper-mixin/src/Namespace.js';
+import { ns } from '@api-client/amf-store/worker.index.js';
+import { classMap } from "lit-html/directives/class-map";
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiShapeUnion} ApiShapeUnion */
@@ -11,17 +12,65 @@ import { ns } from '@api-components/amf-helper-mixin/src/Namespace.js';
 /** @typedef {import('@api-client/amf-store').ApiFileShape} ApiFileShape */
 
 /**
- * @param {string} name The name of the parameter
- * @param {boolean} required Whether the parameter is required
- * @return {TemplateResult} The template for the property name value. 
+ * @param {string} label The label to render.
+ * @param {string} title The value of the title attribute
+ * @param {string[]=} [css=[]] The list of class names to add
+ * @return {TemplateResult} The template for a pill visualization object
  */
-export function paramNameTemplate(name, required) {
-  let label = String(name||'');
-  if (required) {
-    label += '*';
+export function pillTemplate(label, title, css=[]) {
+  const classes = {
+    'param-pill': true,
+    'pill': true,
+  };
+  css.forEach((item) => { classes[item] = true });
+  return html`
+  <span class="${classMap(classes)}" title="${title}">
+    ${label}
+  </span>`;
+}
+
+/**
+ * @param {TemplateResult[]} pills The pills to render
+ * @returns {TemplateResult|string}
+ */
+function pillsLine(pills) {
+  if (!pills.length) {
+    return '';
   }
   return html`
-  <div class="param-name">
+  <div class="param-pills">
+    ${pills}
+  </div>
+  `;
+}
+
+/**
+ * @param {TemplateResult[]} pills The pills to render
+ * @param {TemplateResult[]} items The table properties to render.
+ * @returns {TemplateResult}
+ */
+function pillsAndTable(pills, items) {
+  return html`
+    ${pillsLine(pills)}
+    ${items.length ? html`<div class="param-properties">${items}</div>` : ''}
+  `;
+}
+
+/**
+ * @param {string} name The name of the parameter
+ * @param {boolean=} required Whether the parameter is required
+ * @param {boolean=} deprecated Whether the parameter is deprecated
+ * @return {TemplateResult} The template for the property name value. 
+ */
+export function paramNameTemplate(name, required=false, deprecated=false) {
+  const label = String(name||'');
+  const classes = {
+    'param-name': true,
+    required,
+    deprecated,
+  };
+  return html`
+  <div class="${classMap(classes)}">
     ${label}
   </div>
   `;
@@ -64,17 +113,17 @@ export function descriptionValueTemplate(description) {
  * @param {string} value
  * @return {TemplateResult}
  */
-function tablePropertyTemplate(label, value) {
+export function tablePropertyTemplate(label, value) {
   return html`
   <div class="schema-property-item">
     <div class="schema-property-label">${label}:</div>
-    <div class="schema-property-value code-value">${value}</div>
+    <div class="schema-property-value code-value inline">${value}</div>
   </div>
   `;
 }
 
 
-function detailSectionTemplate(items) {
+export function detailSectionTemplate(items) {
   return html`
   <details class="property-details">
     <summary><span class="label">Details</span></summary>
@@ -91,8 +140,9 @@ function detailSectionTemplate(items) {
  * @return {TemplateResult|string} The template for the details of the scalar schema
  */
 export function scalarDetailsTemplate(schema, noDetail) {
-  const { examples=[], values=[], defaultValueStr, format, maxLength, maximum, minLength, minimum, multipleOf, pattern, readOnly, writeOnly } = schema;
+  const { examples=[], values=[], defaultValueStr, format, maxLength, maximum, minLength, minimum, multipleOf, pattern, readOnly, writeOnly, deprecated } = schema;
   const result = [];
+  const pills = [];
   if (defaultValueStr) {
     result.push(tablePropertyTemplate('Default value', defaultValueStr));
   }
@@ -118,17 +168,28 @@ export function scalarDetailsTemplate(schema, noDetail) {
     result.push(tablePropertyTemplate('Multiple of', String(multipleOf)));
   }
   if (readOnly) {
-    result.push(tablePropertyTemplate('Read only', 'yes'));
+    pills.push(pillTemplate('Read only', 'This property is read only.'));
+    // result.push(tablePropertyTemplate('Read only', 'yes'));
   }
   if (writeOnly) {
-    result.push(tablePropertyTemplate('Write only', 'yes'));
+    pills.push(pillTemplate('Write only', 'This property is write only.'));
+    // result.push(tablePropertyTemplate('Write only', 'yes'));
+  }
+  if (deprecated) {
+    pills.push(pillTemplate('Deprecated', 'This property is marked as deprecated.', ['warning']));
+    // result.push(html`
+    // <div class="schema-property-item">
+    //   <div class="schema-property-label">Deprecated:</div>
+    //   <div class="schema-property-value">This property is deprecated</div>
+    // </div>
+    // `)
   }
   if (values.length) {
     result[result.length] = html`
     <div class="schema-property-item">
     <div class="schema-property-label">Enum:</div>
       <ul class="enum-items">
-        ${values.map((item) => html`<li class="code-value">${/** @type ApiScalarNode */ (item).value}</li>`)}
+        ${values.map((item) => html`<li class="code-value inline">${/** @type ApiScalarNode */ (item).value}</li>`)}
       </ul>
     </div>
     `;
@@ -144,15 +205,21 @@ export function scalarDetailsTemplate(schema, noDetail) {
     `;
   }
   if (noDetail && result.length) {
-    return html`${result}`;
+    return pillsAndTable(pills, result);
+    // return html`${result}`;
   }
   if (result.length && result.length < 3) {
-    return html`${result}`;
+    return pillsAndTable(pills, result);
+    // return html`${result}`;
   }
   if (result.length) {
-    return detailSectionTemplate(result);
-  }
-  return '';
+    return html`
+    ${pillsLine(pills)}
+    ${detailSectionTemplate(result)}
+    `;
+    // return detailSectionTemplate(result);
+  } 
+  return pillsLine(pills);
 }
 
 /**
@@ -160,8 +227,9 @@ export function scalarDetailsTemplate(schema, noDetail) {
  * @return {TemplateResult|string} The template for the details of the Node schema
  */
 function nodeDetailsTemplate(schema) {
-  const { examples, maxProperties, minProperties, readOnly, writeOnly} = schema;
+  const { examples, maxProperties, minProperties, readOnly, writeOnly, deprecated } = schema;
   const result = [];
+  const pills = [];
   if (typeof minProperties === 'number') {
     result.push(tablePropertyTemplate('Minimum properties', String(minProperties)));
   }
@@ -169,10 +237,15 @@ function nodeDetailsTemplate(schema) {
     result.push(tablePropertyTemplate('Maximum properties', String(maxProperties)));
   }
   if (readOnly) {
-    result.push(tablePropertyTemplate('Read only', 'true'));
+    pills.push(pillTemplate('Read only', 'This property is read only.'));
+    // result.push(tablePropertyTemplate('Read only', 'yes'));
   }
   if (writeOnly) {
-    result.push(tablePropertyTemplate('Write only', 'true'));
+    pills.push(pillTemplate('Write only', 'This property is write only.'));
+    // result.push(tablePropertyTemplate('Write only', 'yes'));
+  }
+  if (deprecated) {
+    pills.push(pillTemplate('Deprecated', 'This property is marked as deprecated.', ['warning']));
   }
   if (examples.length) {
     result[result.length] = html`
@@ -185,12 +258,17 @@ function nodeDetailsTemplate(schema) {
     `;
   }
   if (result.length && result.length < 3) {
-    return html`${result}`;
+    return pillsAndTable(pills, result);
+    // return html`${result}`;
   }
   if (result.length) {
-    return detailSectionTemplate(result);
-  }
-  return '';
+    return html`
+    ${pillsLine(pills)}
+    ${detailSectionTemplate(result)}
+    `;
+    // return detailSectionTemplate(result);
+  } 
+  return pillsLine(pills);
 }
 
 /**
@@ -198,8 +276,9 @@ function nodeDetailsTemplate(schema) {
  * @return {TemplateResult|string} The template for the details of the Array schema
  */
 function arrayDetailsTemplate(schema) {
-  const { examples, readOnly, writeOnly, uniqueItems, defaultValueStr } = schema;
+  const { examples, readOnly, writeOnly, uniqueItems, defaultValueStr, deprecated } = schema;
   const result = [];
+  const pills = [];
   if (defaultValueStr) {
     result.push(tablePropertyTemplate('Default value', defaultValueStr));
   }
@@ -207,10 +286,15 @@ function arrayDetailsTemplate(schema) {
     result.push(tablePropertyTemplate('Unique items', 'true'));
   }
   if (readOnly) {
-    result.push(tablePropertyTemplate('Read only', 'true'));
+    pills.push(pillTemplate('Read only', 'This property is read only.'));
+    // result.push(tablePropertyTemplate('Read only', 'yes'));
   }
   if (writeOnly) {
-    result.push(tablePropertyTemplate('Write only', 'true'));
+    pills.push(pillTemplate('Write only', 'This property is write only.'));
+    // result.push(tablePropertyTemplate('Write only', 'yes'));
+  }
+  if (deprecated) {
+    pills.push(pillTemplate('Deprecated', 'This property is marked as deprecated.', ['warning']));
   }
   if (examples.length) {
     result[result.length] = html`
@@ -223,12 +307,17 @@ function arrayDetailsTemplate(schema) {
     `;
   }
   if (result.length && result.length < 3) {
-    return html`${result}`;
+    return pillsAndTable(pills, result);
+    // return html`${result}`;
   }
   if (result.length) {
-    return detailSectionTemplate(result);
-  }
-  return '';
+    return html`
+    ${pillsLine(pills)}
+    ${detailSectionTemplate(result)}
+    `;
+    // return detailSectionTemplate(result);
+  } 
+  return pillsLine(pills);
 }
 
 /**
@@ -236,16 +325,22 @@ function arrayDetailsTemplate(schema) {
  * @return {TemplateResult|string} The template for the details of the Union schema
  */
 export function unionDetailsTemplate(schema) {
-  const { examples, readOnly, writeOnly, defaultValueStr } = schema;
+  const { examples, readOnly, writeOnly, defaultValueStr, deprecated } = schema;
   const result = [];
+  const pills = [];
   if (defaultValueStr) {
     result.push(tablePropertyTemplate('Default value', defaultValueStr));
   }
   if (readOnly) {
-    result.push(tablePropertyTemplate('Read only', 'true'));
+    pills.push(pillTemplate('Read only', 'This property is read only.'));
+    // result.push(tablePropertyTemplate('Read only', 'yes'));
   }
   if (writeOnly) {
-    result.push(tablePropertyTemplate('Write only', 'true'));
+    pills.push(pillTemplate('Write only', 'This property is write only.'));
+    // result.push(tablePropertyTemplate('Write only', 'yes'));
+  }
+  if (deprecated) {
+    pills.push(pillTemplate('Deprecated', 'This property is marked as deprecated.', ['warning']));
   }
   if (examples.length) {
     result[result.length] = html`
@@ -258,12 +353,17 @@ export function unionDetailsTemplate(schema) {
     `;
   }
   if (result.length && result.length < 3) {
-    return html`${result}`;
+    return pillsAndTable(pills, result);
+    // return html`${result}`;
   }
   if (result.length) {
-    return detailSectionTemplate(result);
-  }
-  return '';
+    return html`
+    ${pillsLine(pills)}
+    ${detailSectionTemplate(result)}
+    `;
+    // return detailSectionTemplate(result);
+  } 
+  return pillsLine(pills);
 }
 
 /**
@@ -271,8 +371,9 @@ export function unionDetailsTemplate(schema) {
  * @return {TemplateResult|string} The template for the details of the File schema
  */
 export function fileDetailsTemplate(schema) {
-  const { examples=[], values=[], defaultValueStr, format, maxLength, maximum, minLength, minimum, multipleOf, pattern, readOnly, writeOnly, fileTypes, } = schema;
+  const { examples=[], values=[], defaultValueStr, format, maxLength, maximum, minLength, minimum, multipleOf, pattern, readOnly, writeOnly, fileTypes, deprecated } = schema;
   const result = [];
+  const pills = [];
   if (defaultValueStr) {
     result.push(tablePropertyTemplate('Default value', defaultValueStr));
   }
@@ -280,10 +381,15 @@ export function fileDetailsTemplate(schema) {
     result.push(tablePropertyTemplate('File types', fileTypes.join(', ')));
   }
   if (readOnly) {
-    result.push(tablePropertyTemplate('Read only', 'true'));
+    pills.push(pillTemplate('Read only', 'This property is read only.'));
+    // result.push(tablePropertyTemplate('Read only', 'yes'));
   }
   if (writeOnly) {
-    result.push(tablePropertyTemplate('Write only', 'true'));
+    pills.push(pillTemplate('Write only', 'This property is write only.'));
+    // result.push(tablePropertyTemplate('Write only', 'yes'));
+  }
+  if (deprecated) {
+    pills.push(pillTemplate('Deprecated', 'This property is marked as deprecated.', ['warning']));
   }
   if (format) {
     result.push(tablePropertyTemplate('Format', format));
@@ -311,7 +417,7 @@ export function fileDetailsTemplate(schema) {
     <div class="schema-property-item">
     <div class="schema-property-label">Enum:</div>
       <ul class="enum-items">
-        ${values.map((item) => html`<li class="code-value">${/** @type ApiScalarNode */ (item).value}</li>`)}
+        ${values.map((item) => html`<li class="code-value inline">${/** @type ApiScalarNode */ (item).value}</li>`)}
       </ul>
     </div>
     `;
@@ -327,12 +433,17 @@ export function fileDetailsTemplate(schema) {
     `;
   }
   if (result.length && result.length < 3) {
-    return html`${result}`;
+    return pillsAndTable(pills, result);
+    // return html`${result}`;
   }
   if (result.length) {
-    return detailSectionTemplate(result);
-  }
-  return '';
+    return html`
+    ${pillsLine(pills)}
+    ${detailSectionTemplate(result)}
+    `;
+    // return detailSectionTemplate(result);
+  } 
+  return pillsLine(pills);
 }
 
 /**
