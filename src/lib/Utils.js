@@ -5,6 +5,8 @@ import { HeadersParser } from '@advanced-rest-client/arc-headers';
 /** @typedef {import('@api-client/amf-store').ApiScalarShape} ApiScalarShape */
 /** @typedef {import('@api-client/amf-store').ApiArrayShape} ApiArrayShape */
 /** @typedef {import('@api-client/amf-store').ApiUnionShape} ApiUnionShape */
+/** @typedef {import('@api-client/amf-store').ApiParameterRecursive} ApiParameterRecursive */
+/** @typedef {import('@api-client/amf-store').ApiParameter} ApiParameter */
 
 /**
  * Builds full type name for `@type` value of scalar values.
@@ -113,4 +115,19 @@ export function ensureContentType(headers, mime) {
     list.push({ name: 'content-type', value: mime, enabled: true });
   }
   return HeadersParser.toString(list);
+}
+
+
+/**
+   * @param {ApiParameter|ApiParameterRecursive} parameter
+   * @param {ApiShapeUnion} schema
+   * @returns {string} The name to use in the input.
+   */
+export function readLabelValue(parameter, schema) {
+  let label = schema.displayName || parameter.name ||  schema.name;
+  const { required } = parameter;
+  if (required) {
+    label += '*';
+  }
+  return label;
 }

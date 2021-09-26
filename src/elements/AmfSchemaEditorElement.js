@@ -4,6 +4,7 @@ import { html } from 'lit-element';
 import { StoreEvents, StoreEventTypes, ns } from '@api-client/amf-store/worker.index.js';
 import { TelemetryEvents, ReportingEvents } from '@api-client/graph-project';
 import { MarkdownStyles } from '@advanced-rest-client/highlight';
+import { ApiExampleGenerator, ApiSchemaGenerator } from '@api-client/api-schema';
 import '@advanced-rest-client/highlight/arc-marked.js';
 import '@anypoint-web-components/anypoint-radio-button/anypoint-radio-button.js';
 import '@anypoint-web-components/anypoint-radio-button/anypoint-radio-group.js';
@@ -19,8 +20,6 @@ import {
   scalarDetailsTemplate,
   unionDetailsTemplate,
 } from './SchemaCommonTemplates.js';
-import { ApiExampleGenerator } from '../lib/ApiExampleGenerator.js';
-import { ShapeExampleGenerator } from '../generators/ShapeExampleGenerator.js';
 import { 
   AmfDocumentationBase,
   queryingValue,
@@ -49,7 +48,7 @@ import {
 /** @typedef {import('@api-client/amf-store').ApiArrayShape} ApiArrayShape */
 /** @typedef {import('@api-client/amf-store').ApiTupleShape} ApiTupleShape */
 /** @typedef {import('@api-client/amf-store').ApiPropertyShape} ApiPropertyShape */
-/** @typedef {import('../types').SchemaExample} SchemaExample */
+/** @typedef {import('@api-client/api-schema').SchemaExample} SchemaExample */
 /** @typedef {import('./mixins/DescriptionEditMixin').DescriptionTemplateOptions} DescriptionTemplateOptions */
 
 export const mimeTypeValue = Symbol('mimeTypeValue');
@@ -255,7 +254,7 @@ export default class AmfSchemaEditorElement extends DescriptionEditMixin(AmfDocu
             selectedUnions.push(all[id]);
           }
         });
-        const result = ShapeExampleGenerator.fromSchema(type, mimeType, {
+        const result = ApiSchemaGenerator.asExample(type, mimeType, {
           selectedUnions,
         });
         if (result) {

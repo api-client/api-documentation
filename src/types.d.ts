@@ -1,17 +1,4 @@
-import { ApiExample, ApiParameterRecursive, ApiSecurityRequirementRecursive, ApiShapeUnion } from "@api-client/amf-store";
-import { BasicAuthorization, BearerAuthorization, DigestAuthorization, OAuth1Authorization, OAuth2Authorization } from "@advanced-rest-client/arc-types/src/authorization/Authorization";
-
-export declare interface SchemaExample extends ApiExample {
-  renderValue?: string;
-  label?: string;
-}
-
-export declare interface ShapeExampleGeneratorOptions {
-  /**
-   * All selected unions in the current view.
-   */
-  selectedUnions?: string[];
-}
+import { ApiParameterRecursive, ApiSecurityRequirementRecursive, ApiShapeUnion } from "@api-client/amf-store";
 
 export interface OperationParameter {
   parameter: ApiParameterRecursive;

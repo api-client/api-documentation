@@ -171,7 +171,7 @@ export class Oauth2RamlCustomData {
     if (properties.default) {
       const item = /** @type ApiScalarNode */ (properties.default);
       schema.defaultValueStr = item.value;
-      schema.defaultValue = item.value;
+      // schema.defaultValue = item.value;
     }
     if (properties.description) {
       const item = /** @type ApiScalarNode */ (properties.description);

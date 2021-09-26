@@ -1,6 +1,4 @@
-import { ApiExampleGenerator } from '../lib/ApiExampleGenerator.js';
-import { ApiMonacoSchemaGenerator } from '../lib/ApiMonacoSchemaGenerator.js';
-import { ShapeExampleGenerator } from '../generators/ShapeExampleGenerator.js';
+import { ApiExampleGenerator, ApiMonacoSchemaGenerator, ApiSchemaGenerator } from '@api-client/api-schema';
 
 /** @typedef {import('@api-client/amf-store').ApiPayloadRecursive} ApiPayloadRecursive */
 /** @typedef {import('@api-client/amf-store').ApiShapeUnion} ApiShapeUnion */
@@ -40,7 +38,7 @@ export function getPayloadValue(payload) {
     return info;
   }
   // generate values.
-  const result = ShapeExampleGenerator.fromSchema(schema, mediaType, {
+  const result = ApiSchemaGenerator.asExample(schema, mediaType, {
     selectedUnions: [],
   });
   if (!result || !result.renderValue) {

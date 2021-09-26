@@ -5,6 +5,7 @@ import { LitElement, html } from 'lit-element';
 import { dedupeMixin } from '@open-wc/dedupe-mixin';
 import { ns } from '@api-client/amf-store/worker.index.js';
 import { notifyChange, } from '@advanced-rest-client/authorization/src/Utils.js';
+import { ApiSchemaValues } from '@api-client/api-schema';
 import '@anypoint-web-components/anypoint-dropdown-menu/anypoint-dropdown-menu.js';
 import '@anypoint-web-components/anypoint-listbox/anypoint-listbox.js';
 import '@anypoint-web-components/anypoint-item/anypoint-item.js';
@@ -15,8 +16,7 @@ import '@anypoint-web-components/anypoint-button/anypoint-icon-button.js';
 import '@advanced-rest-client/arc-icons/arc-icon.js';
 import { ifDefined } from 'lit-html/directives/if-defined.js'
 import * as InputCache from '../../lib/InputCache.js';
-import { AmfSchemaProcessor } from '../../lib/AmfSchemaProcessor.js';
-import { AmfInputParser } from '../../lib/AmfInputParser.js';
+import { readLabelValue } from '../../lib/Utils.js';
 
 /** @typedef {import('lit-element').TemplateResult} TemplateResult */
 /** @typedef {import('@api-client/amf-store').ApiParameterRecursive} ApiParameterRecursive */
@@ -137,9 +137,9 @@ const mxFunction = base => {
       }
       let result;
       if (isArray) {
-        result = AmfSchemaProcessor.readArrayValues(parameter, schema);
+        result = ApiSchemaValues.readInputValues(parameter, schema);
       } else {
-        result = AmfSchemaProcessor.readInputValue(parameter, schema);
+        result = ApiSchemaValues.readInputValue(parameter, schema);
       }
       if (result !== undefined) {
         InputCache.set(this, id, result, this.globalCache);
@@ -162,7 +162,7 @@ const mxFunction = base => {
         return;
       }
       // sets cached value of the input.
-      const typed = AmfInputParser.parseUserInput(value, param.schema);
+      const typed = ApiSchemaValues.parseUserInput(value, param.schema);
       InputCache.set(this, domainId, typed, this.globalCache, isArray === 'true', index ? Number(index) : undefined);
       notifyChange(this);
     }
@@ -220,7 +220,7 @@ const mxFunction = base => {
       }
       const enumValues = /** @type ApiScalarNode[] */ (param.schema.values);
       const { value } = enumValues[list.selected];
-      const typed = AmfInputParser.parseUserInput(value, param.schema);
+      const typed = ApiSchemaValues.parseUserInput(value, param.schema);
       InputCache.set(this, domainId, typed, this.globalCache, isArray === 'true', index ? Number(index) : undefined);
       notifyChange(this);
     }
@@ -307,7 +307,7 @@ const mxFunction = base => {
       if (values && values.length) {
         return this[enumTemplate](parameter, schema, opts);
       }
-      const inputType = AmfInputParser.readInputType(dataType);
+      const inputType = ApiSchemaValues.readInputType(dataType);
       if (inputType === 'boolean') {
         return this[booleanTemplate](parameter, schema, opts);
       }
@@ -324,7 +324,7 @@ const mxFunction = base => {
     [textInputTemplate](parameter, schema, type, opts={}) {
       const { id, binding } = parameter;
       const { pattern, minimum, minLength, maxLength, maximum, multipleOf } = schema;
-      const label = AmfSchemaProcessor.readLabelValue(parameter, schema);
+      const label = readLabelValue(parameter, schema);
       const { required, allowEmptyValue, } = parameter;
       let value;
       if (opts.arrayItem) {
@@ -333,7 +333,7 @@ const mxFunction = base => {
         value = this[readInputValue](parameter, schema);
       }
       if (value) {
-        value = AmfInputParser.parseSchemaInput(value, schema);
+        value = ApiSchemaValues.parseScalarInput(value, schema);
       }
       /** @type number */
       let step;
@@ -405,7 +405,7 @@ const mxFunction = base => {
      */
     [enumTemplate](parameter, schema, opts={}) {
       const { anypoint } = this;
-      const label = AmfSchemaProcessor.readLabelValue(parameter, schema);
+      const label = readLabelValue(parameter, schema);
       const enumValues = /** @type ApiScalarNode[] */ (schema.values || []);
       const selectedValue = this[readInputValue](parameter, schema);
       const selected = enumValues.findIndex(i => i.value === selectedValue);
@@ -450,7 +450,7 @@ const mxFunction = base => {
      * @returns {TemplateResult|string} The template for the checkbox input.
      */
     [booleanTemplate](parameter, schema, opts={}) {
-      const label = AmfSchemaProcessor.readLabelValue(parameter, schema);
+      const label = readLabelValue(parameter, schema);
       const { required, id } = parameter;
       /** @type {boolean} */
       let value;
@@ -569,7 +569,7 @@ const mxFunction = base => {
         return '';
       }
       const { id } = parameter;
-      const label = AmfSchemaProcessor.readLabelValue(parameter, schema);
+      const label = readLabelValue(parameter, schema);
       const values = /** @type any[] */ (this[readInputValue](parameter, schema, true));
       const options = { arrayItem: true, };
       const inputs = values.map((value, index) => this[parameterSchemaTemplate](parameter, items, { ...options, value, index }));

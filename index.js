@@ -8,7 +8,5 @@ export { default as AmfSchemaDocumentElement } from './src/elements/AmfSchemaDoc
 export { default as AmfDocumentationDocumentElement } from './src/elements/AmfDocumentationDocumentElement.js';
 export { default as AmfAuthorizationEditorElement } from './src/elements/AmfAuthorizationEditorElement.js';
 export { default as AmfAuthorizationMethodElement } from './src/elements/AmfAuthorizationMethodElement.js';
-export { ApiExampleGenerator } from './src/lib/ApiExampleGenerator.js';
-export { ShapeExampleGenerator } from './src/generators/ShapeExampleGenerator.js';
 export { AuthorizationPreProcessor } from './src/lib/AuthorizationPreProcessor.js';
 export * as Utils from './src/lib/Utils.js';
